@@ -116,6 +116,13 @@ export const translations = {
     pro_languages_val: '30+ Languages',
     pro_export_val: 'Advanced (TXT, DOCX, PDF, SRT)',
 
+    sidebar: {
+      home: 'Home',
+      upload: 'Upload',
+      transcriptions: 'Transcriptions',
+      features: 'Features',
+    },
+
     about_title: 'About Us',
     about_p1: 'TranscribeAI was born from a simple idea: transcription should be easy, fast, and accessible to everyone. We are a team of passionate developers, designers, and AI experts dedicated to building the most powerful and user-friendly transcription service on the market.',
     about_p2: 'Whether you are a podcaster, video creator, journalist, student, or researcher, our mission is to provide you with a tool that saves you time and effort, allowing you to focus on what you do best.',
@@ -177,6 +184,13 @@ export const translations = {
     description: 'Son teknoloji yapay zekamızla ses ve video dosyalarınızı zahmetsizce doğru metne dönüştürün. Zamandan tasarruf edin ve üretkenliğinizi artırın.',
     getStarted: 'Ücretsiz Başlayın',
     login: 'Giriş Yap',
+    
+    sidebar: {
+      home: 'Ana Sayfa',
+      upload: 'Yükle',
+      transcriptions: 'Transkriptler',
+      features: 'Özellikler',
+    },
     signup: 'Kayıt Ol',
     signup_desc: 'Ses ve video dosyalarınızı ücretsiz olarak deşifre etmeye başlamak için bir hesap oluşturun.',
     createAccount: 'Hesap Oluştur',

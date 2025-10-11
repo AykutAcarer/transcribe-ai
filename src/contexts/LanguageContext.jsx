@@ -18,6 +18,7 @@ export const LanguageProvider = ({ children }) => {
     language,
     setLanguage,
     t,
+    translations: translations[language] || translations['en'],
     availableLanguages: Object.keys(translations),
   };
 

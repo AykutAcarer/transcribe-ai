@@ -12,8 +12,7 @@ const FileUpload = () => {
   const navigate = useNavigate();
   const uploadControllers = useRef({});
   
-  const API_URL = 'https://clrjcjuotgwrssjcwzxj.supabase.co/functions/v1/transcribe';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNscmpjanVvdGd3cnNzamN3enhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE2NTAyNTksImV4cCI6MjAzNzIyNjI1OX0.WkWXzX-4a7Et7q3_G8s_q20v8w62f0FzG5h93z4L8s8';
+  const API_URL = '/api/transcribe';
 
   const allowedFormats = [
     'audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/aac', 'audio/flac', 'audio/ogg',
@@ -131,9 +130,6 @@ const FileUpload = () => {
 
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            },
             body: formData,
             signal: controller.signal,
         });

@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5000",
+    "server": "node server.js",
+    "start": "node server.js & npm run dev",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 5000"
   },
@@ -26,7 +28,9 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "docx": "^8.5.0",
+    "express": "^5.1.0",
     "file-saver": "^2.0.5",
+    "formidable": "^3.5.4",
     "framer-motion": "^10.16.4",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.285.0",

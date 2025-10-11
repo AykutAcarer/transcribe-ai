@@ -33,8 +33,9 @@ const TranscriptEditorPage = () => {
   }, [id, navigate]);
 
   const handleCopyToClipboard = () => {
-    if (transcription?.transcript_text) {
-      navigator.clipboard.writeText(transcription.transcript_text);
+    const textToCopy = transcription?.text || transcription?.transcript_text;
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
       toast({ title: 'Copied to clipboard!' });
     }
   };
@@ -47,13 +48,15 @@ const TranscriptEditorPage = () => {
   };
 
   const downloadTXT = () => {
-    const blob = new Blob([transcription.transcript_text], { type: 'text/plain;charset=utf-8' });
+    const textContent = transcription.text || transcription.transcript_text;
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
     saveAs(blob, `${transcription.file_name || 'transcription'}.txt`);
   };
 
   const downloadSRT = () => {
     let srtContent = '';
-    transcription.transcript_json?.segments?.forEach((segment, index) => {
+    const segments = transcription.segments || transcription.transcript_json?.segments || [];
+    segments.forEach((segment, index) => {
       const startTime = formatTimestamp(segment.start).replace('.',',');
       const endTime = formatTimestamp(segment.end).replace('.',',');
       srtContent += `${index + 1}\n`;
@@ -70,13 +73,15 @@ const TranscriptEditorPage = () => {
     doc.setFontSize(16);
     doc.text(transcription.file_name || 'Transcription', 10, 20);
     doc.setFontSize(11);
-    const splitText = doc.splitTextToSize(transcription.transcript_text, 180);
+    const textContent = transcription.text || transcription.transcript_text;
+    const splitText = doc.splitTextToSize(textContent, 180);
     doc.text(splitText, 10, 30);
     doc.save(`${transcription.file_name || 'transcription'}.pdf`);
   };
 
   const downloadDOCX = () => {
-    const paragraphs = transcription.transcript_json?.segments?.map(segment => 
+    const segments = transcription.segments || transcription.transcript_json?.segments || [];
+    const paragraphs = segments.map(segment => 
       new Paragraph({
         children: [
           new TextRun({ text: `[${formatTimestamp(segment.start)}] `, bold: true }),
@@ -84,7 +89,7 @@ const TranscriptEditorPage = () => {
         ],
         spacing: { after: 200 },
       })
-    ) || [];
+    );
 
     const doc = new Document({
       sections: [{
@@ -163,7 +168,7 @@ const TranscriptEditorPage = () => {
             ref={transcriptContentRef}
           >
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4">
-              {transcription.transcript_json?.segments?.map((segment, index) => (
+              {(transcription.segments || transcription.transcript_json?.segments || []).map((segment, index) => (
                 <div key={index} className="grid grid-cols-[100px_1fr] gap-4">
                   <div className="text-purple-400 font-semibold flex items-start">
                     <span className="bg-gray-800/50 px-2 py-1 rounded">{formatTimestamp(segment.start)}</span>
@@ -179,7 +184,7 @@ const TranscriptEditorPage = () => {
                     <p className="text-gray-400">Transcription is processing...</p>
                 </div>
               )}
-               {transcription.status === 'completed' && (!transcription.transcript_json?.segments || transcription.transcript_json.segments.length === 0) && (
+               {transcription.status === 'completed' && (!transcription.segments && !transcription.transcript_json?.segments || (transcription.segments || transcription.transcript_json?.segments || []).length === 0) && (
                  <div className="flex justify-center items-center flex-col gap-4 p-8">
                     <p className="text-gray-400">Transcription complete, but no text was detected in the audio.</p>
                 </div>
