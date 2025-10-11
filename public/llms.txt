@@ -1,0 +1,19 @@
+## Pages
+- [-](/about): No description available
+- [-](/pricing): No description available
+- [-](/privacy): No description available
+- [-](/security): No description available
+- [-](/signup): No description available
+- [-](/terms): No description available
+- [Dashboard - TranscribeAI](/dashboard): Manage your transcriptions and view your account statistics
+- [Edit Transcript -](/testtranscripteditor): No description available
+- [Edit Transcript - TranscribeAI](/transcripteditor): Edit and export your transcription
+- [Forgot Password - TranscribeAI](/forgotpassword): Reset your TranscribeAI account password
+- [Login - TranscribeAI](/login): Login to your TranscribeAI account to access your transcriptions and manage your projects.
+- [Reset Password - TranscribeAI](/resetpassword): Create a new password for your TranscribeAI account
+- [Settings - TranscribeAI](/settings): Manage your account settings and preferences
+- [Test Dashboard - TranscribeAI](/testdashboard): A test version of the TranscribeAI dashboard.
+- [Test Transcriptions - TranscribeAI](/testtranscriptions): View and manage your test transcriptions.
+- [Test Upload - TranscribeAI](/testupload): Test file upload for TranscribeAI.
+- [Transcriptions - TranscribeAI](/transcriptions): View and manage all your transcriptions
+- [Upload - TranscribeAI](/upload): Upload audio or video files for AI transcription
