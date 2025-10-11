@@ -36,6 +36,13 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-11**: Data Structure Migration & Frontend Updates
+  - Migrated all frontend components to use new data structure (text, segments, duration, language)
+  - Updated TranscriptEditorPage to read from new fields with legacy fallback support
+  - Modified all export functions (TXT, DOCX, PDF, SRT) to use new data structure
+  - Ensured backward compatibility with existing transcriptions
+  - Verified complete data flow: upload → API → storage → display → export
+  
 - **2025-10-11**: OpenAI Whisper Integration Completed
   - Integrated OpenAI Whisper API for audio/video transcription
   - Created Express backend server (port 3001) for handling transcription requests
@@ -43,8 +50,6 @@ src/
   - Added support for 200MB file uploads with 5-minute duration limit
   - Configured API proxy in Vite for seamless frontend-backend communication
   - Fixed translation context issues by adding sidebar translations
-  - Ensured transcription data structure compatibility (text, segments, duration, language)
-  - Verified export functionality for TXT, DOCX, PDF, and SRT formats
   
 - **2025-10-11**: Initial Replit setup completed
   - Configured Vite dev server to run on port 5000 with 0.0.0.0 host
