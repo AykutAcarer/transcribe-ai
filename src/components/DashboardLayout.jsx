@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mic, Upload, FileText, Menu, X, Info, Home } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSwitcher from '@/components/LanguageSwitcher'; // Düzeltme burada!
+import ThemeToggle from '@/components/ThemeToggle';
 
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
@@ -46,8 +46,8 @@ const DashboardLayout = ({ children }) => {
               ))}
             </div>
 
-            <div className="flex items-center space-x-4">
-              <LanguageSwitcher />
+            <div className="flex items-center space-x-2">
+              <ThemeToggle className="hidden md:inline-flex" />
               <Button
                 variant="ghost"
                 size="icon"
@@ -61,6 +61,9 @@ const DashboardLayout = ({ children }) => {
 
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pb-4 space-y-2">
+              <div className="flex justify-end">
+                <ThemeToggle />
+              </div>
               {navigation.map((item) => (
                 <Link
                   key={item.name}

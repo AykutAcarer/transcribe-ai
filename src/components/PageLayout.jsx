@@ -3,9 +3,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mic, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const PageLayout = ({ children }) => {
   const { t } = useLanguage();
@@ -30,7 +30,7 @@ const PageLayout = ({ children }) => {
             </div>
 
             <div className="flex items-center space-x-2">
-              <LanguageSwitcher />
+              <ThemeToggle />
               <Link to="/upload">
                 <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
                   <Rocket className="w-4 h-4 mr-2" />
