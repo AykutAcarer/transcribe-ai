@@ -50,8 +50,7 @@ const TestFileUpload = () => {
     'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm',
     'audio/x-m4a', 'audio/mp3'
   ];
-  const maxFileSize = 200 * 1024 * 1024; // 200 MB
-  const maxFileDuration = 5 * 60; // 5 minutes in seconds
+  const maxFileSize = 500 * 1024 * 1024; // 500 MB
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -63,21 +62,6 @@ const TestFileUpload = () => {
     }
   }, []);
   
-  const getFileDuration = (file) => {
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(video.src);
-        resolve(video.duration);
-      };
-      video.onerror = () => {
-        resolve(null);
-      };
-      video.src = window.URL.createObjectURL(file);
-    });
-  };
-
   const validateFile = async (file) => {
     if(dailyUploads >= FREE_UPLOAD_LIMIT){
         toast({
@@ -92,18 +76,8 @@ const TestFileUpload = () => {
      if (file.size > maxFileSize) {
       toast({
         title: 'File too large',
-        description: `"${file.name}" is larger than the 200MB limit.`,
+        description: `"${file.name}" is larger than the 500MB limit.`,
         variant: 'destructive'
-      });
-      return false;
-    }
-    
-    const duration = await getFileDuration(file);
-    if (duration && duration > maxFileDuration) {
-      toast({
-        title: 'File too long',
-        description: `"${file.name}" exceeds the 5-minute duration limit.`,
-        variant: 'destructive',
       });
       return false;
     }
@@ -290,7 +264,7 @@ const TestFileUpload = () => {
         
         <h3 className="text-xl font-bold mb-2">Drop files here or click to browse</h3>
         <p className="text-gray-400 mb-4">
-          {FREE_UPLOAD_LIMIT} free transcriptions per day • Max 200MB & 5 min per file
+          {FREE_UPLOAD_LIMIT} free transcriptions per day • Max 500MB per file
         </p>
          <p className="text-purple-400 font-bold mb-4">
           {remainingUploads > 0 ? `${remainingUploads} free uploads remaining today` : "Daily free limit reached"}

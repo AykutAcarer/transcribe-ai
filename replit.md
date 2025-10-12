@@ -1,7 +1,7 @@
 # TranscribeAI - AI-Powered Audio & Video Transcription
 
 ## Overview
-TranscribeAI is a React-based web application that provides AI-powered audio and video transcription services. The platform allows users to convert their media files into accurate text transcriptions with features like speaker identification, multiple export formats, and multi-language support.
+TranscribeAI is a React-based web application that provides AI-powered audio and video transcription services. The platform allows users to convert their media files into accurate text transcriptions with features like speaker identification and multiple export formats.
 
 ## Project Architecture
 
@@ -29,8 +29,8 @@ src/
 
 ## Core Features
 1. **Free Transcription Service**: 10 free transcriptions daily without sign-up required
-2. **Large File Support**: Upload files up to 200MB and 5 minutes long
-3. **Multi-language Support**: Supports 30+ languages
+2. **Large File Support**: Upload files up to 500MB with no duration limits
+3. **English-Only Experience**: Streamlined interface without language switching
 4. **Multiple Export Formats**: Download transcripts as TXT, DOCX, PDF, or SRT
 5. **Speaker Identification**: Automatic detection and labeling of different speakers
 6. **User Authentication**: Optional Supabase-based authentication system
@@ -47,7 +47,7 @@ src/
   - Integrated OpenAI Whisper API for audio/video transcription
   - Created Express backend server (port 3001) for handling transcription requests
   - Updated FileUpload component to use local API endpoint
-  - Added support for 200MB file uploads with 5-minute duration limit
+  - Increased upload limit to 500MB and removed the 5-minute duration cap
   - Configured API proxy in Vite for seamless frontend-backend communication
   - Fixed translation context issues by adding sidebar translations
   

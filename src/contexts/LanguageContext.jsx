@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { translations } from '@/lib/translations';
 
 const LanguageContext = createContext();
@@ -8,18 +8,15 @@ export const useLanguage = () => {
 };
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('en');
-
-  const t = (key) => {
-    return translations[language][key] || translations['en'][key];
-  };
+  const mergedTranslations = useMemo(() => translations.en, []);
+  const availableLanguages = useMemo(() => ['en'], []);
 
   const value = {
-    language,
-    setLanguage,
-    t,
-    translations: translations[language] || translations['en'],
-    availableLanguages: Object.keys(translations),
+    language: 'en',
+    setLanguage: () => {},
+    t: (key) => mergedTranslations[key] ?? key,
+    translations: mergedTranslations,
+    availableLanguages,
   };
 
   return (

@@ -32,8 +32,8 @@ const PricingPage = () => {
     },
     {
       icon: <FileUp className="w-8 h-8 text-white" />,
-      title: "Generous 200MB File Size",
-      description: "Upload larger audio and video files without worrying about tight restrictions.",
+      title: "Generous 500MB File Size",
+      description: "Upload larger audio and video files with no duration limits or hidden restrictions.",
     },
     {
       icon: <Files className="w-8 h-8 text-white" />,

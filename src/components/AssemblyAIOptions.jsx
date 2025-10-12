@@ -113,48 +113,48 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">AssemblyAI Özellikleri</h2>
+          <h2 className="text-xl font-semibold text-white">TranscribeAI Features</h2>
           <p className="text-sm text-gray-400">
-            Tüm transkripsiyon ve zekâ özelliklerini etkinlestirip kisisellestirerek dosyalarinizi AssemblyAI ile analiz edin.
+            Enable and customize every transcription and intelligence feature to analyze your files.
           </p>
         </div>
         <Button variant="outline" onClick={resetDefaults}>
-          Varsayilanlari yükle
+          Load defaults
         </Button>
       </div>
 
-      <Accordion type="multiple" defaultValue={['core', 'intelligence', 'safety', 'customization', 'client']}>
+      <Accordion type="multiple" defaultValue={[]}>
         <AccordionItem value="core">
-          <AccordionTrigger>Temel transkripsiyon ayarlari</AccordionTrigger>
+          <AccordionTrigger>Core transcription settings</AccordionTrigger>
           <AccordionContent>
             <div className={SECTION_CLASSES}>
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="punctuate" checked={Boolean(transcriptionOptions.punctuate)} onCheckedChange={handleToggle('punctuate')} />
-                  <Label htmlFor="punctuate" className={FIELD_LABEL_CLASSES}>Otomatik noktalama</Label>
+                  <Label htmlFor="punctuate" className={FIELD_LABEL_CLASSES}>Automatic punctuation</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Konusmadaki cümleleri noktalama isaretleriyle düzenler.</p>
+                <p className={FIELD_HELPER_CLASSES}>Adds punctuation automatically to spoken sentences.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="format-text" checked={Boolean(transcriptionOptions.format_text)} onCheckedChange={handleToggle('format_text')} />
-                  <Label htmlFor="format-text" className={FIELD_LABEL_CLASSES}>Metni formatla</Label>
+                  <Label htmlFor="format-text" className={FIELD_LABEL_CLASSES}>Format text</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Transkripti büyük harf ve paragraf kurallarina göre düzenler.</p>
+                <p className={FIELD_HELPER_CLASSES}>Applies sentence casing and paragraph formatting to the transcript.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="language-detection" checked={Boolean(transcriptionOptions.language_detection)} onCheckedChange={handleToggle('language_detection')} />
-                  <Label htmlFor="language-detection" className={FIELD_LABEL_CLASSES}>Otomatik dil algilama</Label>
+                  <Label htmlFor="language-detection" className={FIELD_LABEL_CLASSES}>Automatic language detection</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Ses dosyasinin dilini otomatik olarak algilar. Özel bir dil kodu vermek isterseniz asagidaki alani kullanin.</p>
+                <p className={FIELD_HELPER_CLASSES}>Detects the language automatically. Provide a code below if you need to override it.</p>
                 <div className="space-y-2">
-                  <Label htmlFor="language-code" className="text-xs text-gray-300">Dil kodu (ör. tr, en, de)</Label>
+                  <Label htmlFor="language-code" className="text-xs text-gray-300">Language code (e.g. en, de, es)</Label>
                   <Input
                     id="language-code"
-                    placeholder="ISO-639-1 kodu"
+                    placeholder="ISO-639-1 code"
                     value={transcriptionOptions.language_code ?? ''}
                     onChange={handleInputChange('language_code')}
                   />
@@ -164,16 +164,16 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="speaker-labels" checked={Boolean(transcriptionOptions.speaker_labels)} onCheckedChange={handleToggle('speaker_labels')} />
-                  <Label htmlFor="speaker-labels" className={FIELD_LABEL_CLASSES}>Konusmaci etiketleri</Label>
+                  <Label htmlFor="speaker-labels" className={FIELD_LABEL_CLASSES}>Speaker diarization</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Konusmadaki farkli kisileri ayirt eder ve segmentlere konusmaci etiketi ekler.</p>
+                <p className={FIELD_HELPER_CLASSES}>Distinguishes speakers in the audio and tags each segment.</p>
                 <div className="space-y-2">
-                  <Label htmlFor="speakers-expected" className="text-xs text-gray-300">Beklenen konusmaci sayisi (opsiyonel)</Label>
+                  <Label htmlFor="speakers-expected" className="text-xs text-gray-300">Expected speaker count (optional)</Label>
                   <Input
                     id="speakers-expected"
                     type="number"
                     min="0"
-                    placeholder="Örn. 2"
+                    placeholder="e.g. 2"
                     value={transcriptionOptions.speakers_expected ?? ''}
                     onChange={handleInputChange('speakers_expected')}
                   />
@@ -183,76 +183,76 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="dual-channel" checked={Boolean(transcriptionOptions.dual_channel)} onCheckedChange={handleToggle('dual_channel')} />
-                  <Label htmlFor="dual-channel" className={FIELD_LABEL_CLASSES}>Çift kanal destegi</Label>
+                  <Label htmlFor="dual-channel" className={FIELD_LABEL_CLASSES}>Dual channel support</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Stereo kanallarda her konusmaciyi ayri kanaldan isleyerek dogrulugu artirir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Processes each speaker from separate stereo channels to improve accuracy.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="disfluencies" checked={Boolean(transcriptionOptions.disfluencies)} onCheckedChange={handleToggle('disfluencies')} />
-                  <Label htmlFor="disfluencies" className={FIELD_LABEL_CLASSES}>Dolgu kelimelerini dahil et</Label>
+                  <Label htmlFor="disfluencies" className={FIELD_LABEL_CLASSES}>Include filler words</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Eee, ii gibi duraksamalari metne ekler.</p>
+                <p className={FIELD_HELPER_CLASSES}>Keeps filler words like "um" and "uh" in the transcript.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="filter-profanity" checked={Boolean(transcriptionOptions.filter_profanity)} onCheckedChange={handleToggle('filter_profanity')} />
-                  <Label htmlFor="filter-profanity" className={FIELD_LABEL_CLASSES}>Küfür filtreleme</Label>
+                  <Label htmlFor="filter-profanity" className={FIELD_LABEL_CLASSES}>Profanity filter</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Uygunsuz kelimeleri yildiz (*) ile degistirir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Replaces offensive words with an asterisk (*).</p>
               </div>
             </div>
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="intelligence">
-          <AccordionTrigger>Zekâ ve içerik analizi</AccordionTrigger>
+          <AccordionTrigger>Intelligence & content analysis</AccordionTrigger>
           <AccordionContent>
             <div className={SECTION_CLASSES}>
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="auto-highlights" checked={Boolean(transcriptionOptions.auto_highlights)} onCheckedChange={handleToggle('auto_highlights')} />
-                  <Label htmlFor="auto-highlights" className={FIELD_LABEL_CLASSES}>Anahtar ifadeler</Label>
+                  <Label htmlFor="auto-highlights" className={FIELD_LABEL_CLASSES}>Key phrases</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Konusmadan en önemli anahtar ifadeleri çikarir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Extracts the most important phrases from the conversation.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="sentiment-analysis" checked={Boolean(transcriptionOptions.sentiment_analysis)} onCheckedChange={handleToggle('sentiment_analysis')} />
-                  <Label htmlFor="sentiment-analysis" className={FIELD_LABEL_CLASSES}>Duygu analizi</Label>
+                  <Label htmlFor="sentiment-analysis" className={FIELD_LABEL_CLASSES}>Sentiment analysis</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Her cümle için pozitif, negatif veya nötr duygu analizi üretir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Labels each sentence with positive, neutral, or negative sentiment.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="entity-detection" checked={Boolean(transcriptionOptions.entity_detection)} onCheckedChange={handleToggle('entity_detection')} />
-                  <Label htmlFor="entity-detection" className={FIELD_LABEL_CLASSES}>Varlik tanima</Label>
+                  <Label htmlFor="entity-detection" className={FIELD_LABEL_CLASSES}>Entity detection</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Kisi, yer, marka gibi özel adlari isler.</p>
+                <p className={FIELD_HELPER_CLASSES}>Identifies named entities such as people, places, and brands.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="auto-chapters" checked={Boolean(transcriptionOptions.auto_chapters)} onCheckedChange={handleToggle('auto_chapters')} />
-                  <Label htmlFor="auto-chapters" className={FIELD_LABEL_CLASSES}>Otomatik bölümler</Label>
+                  <Label htmlFor="auto-chapters" className={FIELD_LABEL_CLASSES}>Auto chapters</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Uzun konusmalari bölüm basliklari ile segmentlere ayirir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Splits long conversations into chapters with titles.</p>
               </div>
 
               <div className={`${FIELD_CARD_CLASSES} sm:col-span-2`}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="summarization" checked={Boolean(transcriptionOptions.summarization)} onCheckedChange={handleToggle('summarization')} />
-                  <Label htmlFor="summarization" className={FIELD_LABEL_CLASSES}>AssemblyAI özet modeli</Label>
+                  <Label htmlFor="summarization" className={FIELD_LABEL_CLASSES}>AssemblyAI summary model</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Ses dosyasinin kisa ve okunabilir özetini hazirlar.</p>
+                <p className={FIELD_HELPER_CLASSES}>Creates a concise, readable summary of the audio.</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="summary-model" className="text-xs text-gray-300">Özet modeli</Label>
+                    <Label htmlFor="summary-model" className="text-xs text-gray-300">Summary model</Label>
                     <select
                       id="summary-model"
                       className="w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -267,7 +267,7 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="summary-type" className="text-xs text-gray-300">Özet tipi</Label>
+                    <Label htmlFor="summary-type" className="text-xs text-gray-300">Summary type</Label>
                     <select
                       id="summary-type"
                       className="w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -287,7 +287,7 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
                       checked={Boolean(transcriptionOptions.summary_auto_chapters)}
                       onCheckedChange={handleToggle('summary_auto_chapters')}
                     />
-                    <Label htmlFor="summary-auto-chapters" className={FIELD_LABEL_CLASSES}>Bölümlere göre özetle</Label>
+                    <Label htmlFor="summary-auto-chapters" className={FIELD_LABEL_CLASSES}>Summarize by chapters</Label>
                   </div>
                 </div>
               </div>
@@ -296,31 +296,31 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
         </AccordionItem>
 
         <AccordionItem value="safety">
-          <AccordionTrigger>Içerik güvenligi ve PII</AccordionTrigger>
+          <AccordionTrigger>Content safety & PII</AccordionTrigger>
           <AccordionContent>
             <div className={SECTION_CLASSES}>
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="content-safety" checked={Boolean(transcriptionOptions.content_safety)} onCheckedChange={handleToggle('content_safety')} />
-                  <Label htmlFor="content-safety" className={FIELD_LABEL_CLASSES}>Içerik güvenligi</Label>
+                  <Label htmlFor="content-safety" className={FIELD_LABEL_CLASSES}>Content safety</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Güvenlik etiketleri ile potansiyel zararli içerikleri isaretler.</p>
+                <p className={FIELD_HELPER_CLASSES}>Flags potentially harmful content with safety labels.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="iab-categories" checked={Boolean(transcriptionOptions.iab_categories)} onCheckedChange={handleToggle('iab_categories')} />
-                  <Label htmlFor="iab-categories" className={FIELD_LABEL_CLASSES}>IAB konu kategorileri</Label>
+                  <Label htmlFor="iab-categories" className={FIELD_LABEL_CLASSES}>IAB topic categories</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>IAB 2.0 taksonomisine göre konu basliklari üretir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Generates topical tags following the IAB 2.0 taxonomy.</p>
               </div>
 
               <div className={`${FIELD_CARD_CLASSES} sm:col-span-2`}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="redact-pii" checked={Boolean(transcriptionOptions.redact_pii)} onCheckedChange={handleToggle('redact_pii')} />
-                  <Label htmlFor="redact-pii" className={FIELD_LABEL_CLASSES}>PII metin redaksiyonu</Label>
+                  <Label htmlFor="redact-pii" className={FIELD_LABEL_CLASSES}>PII text redaction</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>Kimlik bilgilerini transkript metninden maskeler. Politikalari virgül ile ayirabilirsiniz (ör. person_name, email).</p>
+                <p className={FIELD_HELPER_CLASSES}>Masks personally identifiable information in the transcript. Separate policies with commas (e.g. person_name, email).</p>
                 <Input
                   placeholder="person_name, email, phone_number"
                   value={redactionPoliciesInput}
@@ -333,20 +333,20 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
                     checked={Boolean(transcriptionOptions.redact_pii_sub)}
                     onCheckedChange={handleToggle('redact_pii_sub')}
                   />
-                  <Label htmlFor="redact-pii-sub" className={FIELD_LABEL_CLASSES}>Altyazilarda PII maskele</Label>
+                  <Label htmlFor="redact-pii-sub" className={FIELD_LABEL_CLASSES}>Mask PII in subtitles</Label>
                 </div>
               </div>
 
               <div className={`${FIELD_CARD_CLASSES} sm:col-span-2`}>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="redact-pii-audio" checked={Boolean(transcriptionOptions.redact_pii_audio)} onCheckedChange={handleToggle('redact_pii_audio')} />
-                  <Label htmlFor="redact-pii-audio" className={FIELD_LABEL_CLASSES}>Ses redaksiyonu</Label>
+                  <Label htmlFor="redact-pii-audio" className={FIELD_LABEL_CLASSES}>Redacted audio</Label>
                 </div>
-                <p className={FIELD_HELPER_CLASSES}>PII geçen kisimlarda sesi maskeleyen ek bir ses dosyasi üretir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Generates an alternate audio file with PII sections masked.</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="redact-pii-audio-quality" className="text-xs text-gray-300">Ses kalitesi</Label>
+                    <Label htmlFor="redact-pii-audio-quality" className="text-xs text-gray-300">Audio quality</Label>
                     <select
                       id="redact-pii-audio-quality"
                       className="w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -367,12 +367,12 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
         </AccordionItem>
 
         <AccordionItem value="customization">
-          <AccordionTrigger>Özellestirme</AccordionTrigger>
+          <AccordionTrigger>Customization</AccordionTrigger>
           <AccordionContent>
             <div className={SECTION_CLASSES}>
               <div className={`${FIELD_CARD_CLASSES} sm:col-span-2`}>
-                <Label className={FIELD_LABEL_CLASSES}>Kelime güçlendirme (Word Boost)</Label>
-                <p className={FIELD_HELPER_CLASSES}>Sik kullanilan özel kelimeleri tanimlayarak tanima dogrulugunu artirir. Virgülle ayirin.</p>
+                <Label className={FIELD_LABEL_CLASSES}>Word boost</Label>
+                <p className={FIELD_HELPER_CLASSES}>Improve recognition by listing important keywords. Separate entries with commas.</p>
                 <textarea
                   className="min-h-[80px] w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="assemblyai, istanbul, fintech"
@@ -380,7 +380,7 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
                   onChange={(event) => handleInputChange('word_boost')(parseWordBoostInput(event.target.value))}
                 />
                 <div className="space-y-2">
-                  <Label htmlFor="boost-param" className="text-xs text-gray-300">Boost parametresi</Label>
+                  <Label htmlFor="boost-param" className="text-xs text-gray-300">Boost parameter</Label>
                   <select
                     id="boost-param"
                     className="w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -397,8 +397,8 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
               </div>
 
               <div className={`${FIELD_CARD_CLASSES} sm:col-span-2`}>
-                <Label className={FIELD_LABEL_CLASSES}>Özel yazim eslestirmeleri</Label>
-                <p className={FIELD_HELPER_CLASSES}>Her satir için "yanlis yazim, alternatif => dogru yazim" formatini kullanin.</p>
+                <Label className={FIELD_LABEL_CLASSES}>Custom spelling rules</Label>
+                <p className={FIELD_HELPER_CLASSES}>Use the format "incorrect, alt => Correct" for each line.</p>
                 <textarea
                   className="min-h-[100px] w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="istanbul => Istanbul\nassemly ai, assembly ai => AssemblyAI"
@@ -408,31 +408,31 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
-                <Label htmlFor="audio-start" className={FIELD_LABEL_CLASSES}>Ses baslangiç süresi (ms)</Label>
+                <Label htmlFor="audio-start" className={FIELD_LABEL_CLASSES}>Audio start time (ms)</Label>
                 <Input
                   id="audio-start"
                   type="number"
-                  placeholder="Örn. 0"
+                  placeholder="e.g. 0"
                   value={transcriptionOptions.audio_start_from ?? ''}
                   onChange={handleInputChange('audio_start_from')}
                 />
-                <p className={FIELD_HELPER_CLASSES}>Belirtilen milisaniyeden itibaren transkripsiyon baslatilir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Start the transcription from the specified millisecond.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
-                <Label htmlFor="audio-end" className={FIELD_LABEL_CLASSES}>Ses bitis süresi (ms)</Label>
+                <Label htmlFor="audio-end" className={FIELD_LABEL_CLASSES}>Audio end time (ms)</Label>
                 <Input
                   id="audio-end"
                   type="number"
-                  placeholder="Örn. 120000"
+                  placeholder="e.g. 120000"
                   value={transcriptionOptions.audio_end_at ?? ''}
                   onChange={handleInputChange('audio_end_at')}
                 />
-                <p className={FIELD_HELPER_CLASSES}>Belirtilen milisaniyede transkripsiyon sonlandirilir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Stop the transcription at the specified millisecond.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
-                <Label htmlFor="speech-threshold" className={FIELD_LABEL_CLASSES}>Konusma esigi</Label>
+                <Label htmlFor="speech-threshold" className={FIELD_LABEL_CLASSES}>Speech threshold</Label>
                 <Input
                   id="speech-threshold"
                   type="number"
@@ -441,7 +441,7 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
                   value={transcriptionOptions.speech_threshold ?? ''}
                   onChange={handleInputChange('speech_threshold')}
                 />
-                <p className={FIELD_HELPER_CLASSES}>Ses seviyesine göre konusma algilama hassasiyetini ayarlar.</p>
+                <p className={FIELD_HELPER_CLASSES}>Adjusts speech detection sensitivity based on audio level.</p>
               </div>
             </div>
           </AccordionContent>
@@ -452,7 +452,7 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
           <AccordionContent>
             <div className={SECTION_CLASSES}>
               <div className={FIELD_CARD_CLASSES}>
-                <Label htmlFor="polling-interval" className={FIELD_LABEL_CLASSES}>Sorgulama araligi (ms)</Label>
+                <Label htmlFor="polling-interval" className={FIELD_LABEL_CLASSES}>Polling interval (ms)</Label>
                 <Input
                   id="polling-interval"
                   type="number"
@@ -461,11 +461,11 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
                   value={clientOptions.pollingInterval}
                   onChange={handleClientOption('pollingInterval')}
                 />
-                <p className={FIELD_HELPER_CLASSES}>Transkripsiyon tamamlanana kadar AssemblyAI API'sinin kaç milisaniyede bir yoklanacagini belirler.</p>
+                <p className={FIELD_HELPER_CLASSES}>Determines how frequently to poll the AssemblyAI API until completion.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
-                <Label htmlFor="polling-timeout" className={FIELD_LABEL_CLASSES}>Zaman asimi (ms)</Label>
+                <Label htmlFor="polling-timeout" className={FIELD_LABEL_CLASSES}>Timeout (ms)</Label>
                 <Input
                   id="polling-timeout"
                   type="number"
@@ -473,12 +473,12 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
                   value={clientOptions.pollingTimeout}
                   onChange={handleClientOption('pollingTimeout')}
                 />
-                <p className={FIELD_HELPER_CLASSES}>Varsayilan -1 sinirsiz bekler. Pozitif deger girildiginde belirtilen süre sonunda islem iptal edilir.</p>
+                <p className={FIELD_HELPER_CLASSES}>Default -1 waits indefinitely. A positive value cancels the job after that many milliseconds.</p>
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
-                <Label className={FIELD_LABEL_CLASSES}>Altyazi formatlari</Label>
-                <p className={FIELD_HELPER_CLASSES}>Otomatik üretilmis altyazilari hangi formatlarda saklayacaginizi seçin.</p>
+                <Label className={FIELD_LABEL_CLASSES}>Subtitle formats</Label>
+                <p className={FIELD_HELPER_CLASSES}>Choose which subtitle formats to store for each transcript.</p>
                 <div className="space-y-2">
                   {SUBTITLE_FORMAT_OPTIONS.map((format) => {
                     const id = `subtitle-${format}`;
@@ -497,7 +497,7 @@ const AssemblyAIOptions = ({ value = DEFAULT_ASSEMBLYAI_CONFIG, onChange }) => {
               </div>
 
               <div className={FIELD_CARD_CLASSES}>
-                <Label htmlFor="subtitle-chars" className={FIELD_LABEL_CLASSES}>Altyazi karakter siniri</Label>
+                <Label htmlFor="subtitle-chars" className={FIELD_LABEL_CLASSES}>Subtitle character limit</Label>
                 <Input
                   id="subtitle-chars"
                   type="number"

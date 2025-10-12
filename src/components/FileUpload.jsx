@@ -42,8 +42,7 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
     'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm',
     'audio/x-m4a', 'audio/mp3'
   ];
-  const maxFileSize = 200 * 1024 * 1024; // 200 MB
-  const maxFileDuration = 5 * 60; // 5 minutes in seconds
+  const maxFileSize = 500 * 1024 * 1024; // 500 MB
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -55,31 +54,16 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
     }
   }, []);
   
-  const getFileDuration = (file) => {
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(video.src);
-        resolve(video.duration);
-      };
-      video.onerror = () => {
-        resolve(null);
-      };
-      video.src = window.URL.createObjectURL(file);
-    });
-  };
-
   const validateFile = async (file) => {
     if (file.size > maxFileSize) {
       toast({
         title: t('file_upload_error_large_title') || 'File too large',
         description:
           t('file_upload_error_large_description')?.replace('{name}', file.name) ||
-          `"${file.name}" is larger than the 200MB limit.`,
+          `"${file.name}" is larger than the 500MB limit.`,
         variant: 'destructive'
       });
-      return { valid: false, duration: null };
+      return { valid: false };
     }
 
     if (file.type && !allowedFormats.includes(file.type)) {
@@ -92,27 +76,15 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
           `File type "${file.type}" is not supported for "${file.name}".`,
         variant: 'destructive'
       });
-      return { valid: false, duration: null };
+      return { valid: false };
     }
 
-    const duration = await getFileDuration(file);
-    if (duration && duration > maxFileDuration) {
-      toast({
-        title: t('file_upload_error_duration_title') || 'File too long',
-        description:
-          t('file_upload_error_duration_description')?.replace('{name}', file.name) ||
-          `"${file.name}" exceeds the 5-minute duration limit.`,
-        variant: 'destructive'
-      });
-      return { valid: false, duration };
-    }
-
-    return { valid: true, duration };
+    return { valid: true };
   };
 
   const handleFiles = async (filesToProcess) => {
     for (const file of filesToProcess) {
-      const { valid, duration } = await validateFile(file);
+      const { valid } = await validateFile(file);
       if (valid) {
         const uploadedAt = new Date().toISOString();
         setFiles((prev) => [
@@ -121,7 +93,6 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
             id: crypto.randomUUID(),
             file,
             status: 'pending',
-            duration: duration ?? null,
             uploadedAt
           }
         ]);
@@ -174,7 +145,6 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
           originalFileName: fileData.file.name,
           size: fileData.file.size,
           type: fileData.file.type,
-          duration: fileData.duration,
           uploadedAt: uploadStartedAt,
           source: 'file',
           temporaryId: fileData.id
@@ -303,7 +273,7 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
         
         <h3 className="text-xl font-bold mb-2">{t('file_upload_drop_title') || 'Drop files here or click to browse'}</h3>
         <p className="text-gray-400 mb-4">
-          {t('file_upload_drop_hint') || 'Max 200MB & 5 min per file'}
+          {t('file_upload_drop_hint') || 'Max 500MB per file'}
         </p>
         
         <label htmlFor="file-upload" className="cursor-pointer">

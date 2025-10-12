@@ -28,7 +28,7 @@ const FeaturesInfoPage = () => {
     {
       icon: <FileText className="w-8 h-8" />,
       title: 'Large File Support',
-      description: 'Upload audio or video files up to 200MB and 5 minutes long for transcription.',
+      description: 'Upload audio or video files up to 500MB with no duration limits for transcription.',
     },
     {
       icon: <Languages className="w-8 h-8" />,

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mic, Star, FileText, Share2, Search, UploadCloud, Cpu, Edit3, Rocket } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+
 import AdPlaceholder from '@/components/AdPlaceholder';
 import Footer from '@/components/Footer';
 
@@ -109,7 +109,6 @@ const LandingPage = () => {
               </div>
 
               <div className="flex items-center space-x-2">
-                <LanguageSwitcher />
                 <Link to="/upload">
                   <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 glow-effect">
                     <Rocket className="w-4 h-4 mr-2" />
