@@ -14,9 +14,15 @@ export function Toaster() {
 
 	return (
 		<ToastProvider>
-			{toasts.map(({ id, title, description, action, ...props }) => {
+			{toasts.map(({ id, title, description, action, dismiss, ...toastProps }) => {
+				const handleOpenChange = (open) => {
+					if (!open) {
+						dismiss?.();
+					}
+				};
+
 				return (
-					<Toast key={id} {...props}>
+					<Toast key={id} onOpenChange={handleOpenChange} {...toastProps}>
 						<div className="grid gap-1">
 							{title && <ToastTitle>{title}</ToastTitle>}
 							{description && (

@@ -1,18 +1,41 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+﻿import React, { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, File, X, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import AssemblyAIOptions from '@/components/AssemblyAIOptions';
+import { buildTranscriptionOptions, normalizeAssemblyConfig } from '@/lib/assemblyai';
+import { addTranscriptionFromApi } from '@/lib/transcriptionStorage';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-const FileUpload = () => {
+const parseJsonResponse = async (response) => {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  const text = await response.text();
+  const message = text?.trim().slice(0, 200) || `Unexpected response (${response.status})`;
+  throw new Error(message);
+};
+
+const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
+  const normalizedConfig = normalizeAssemblyConfig(assemblyConfig);
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const navigate = useNavigate();
   const uploadControllers = useRef({});
+  const { t } = useLanguage();
   
   const API_URL = '/api/transcribe';
+
+  const handleAssemblyConfigChange = useCallback(
+    (nextConfig) => {
+      onAssemblyConfigChange?.(nextConfig);
+    },
+    [onAssemblyConfigChange]
+  );
 
   const allowedFormats = [
     'audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/aac', 'audio/flac', 'audio/ogg',
@@ -48,46 +71,61 @@ const FileUpload = () => {
   };
 
   const validateFile = async (file) => {
-     if (file.size > maxFileSize) {
+    if (file.size > maxFileSize) {
       toast({
-        title: 'File too large',
-        description: `"${file.name}" is larger than the 200MB limit.`,
+        title: t('file_upload_error_large_title') || 'File too large',
+        description:
+          t('file_upload_error_large_description')?.replace('{name}', file.name) ||
+          `"${file.name}" is larger than the 200MB limit.`,
         variant: 'destructive'
       });
-      return false;
+      return { valid: false, duration: null };
     }
-    
+
+    if (file.type && !allowedFormats.includes(file.type)) {
+      toast({
+        title: t('file_upload_error_format_title') || 'Invalid file format',
+        description:
+          t('file_upload_error_format_description')
+            ?.replace('{type}', file.type || '')
+            ?.replace('{name}', file.name) ||
+          `File type "${file.type}" is not supported for "${file.name}".`,
+        variant: 'destructive'
+      });
+      return { valid: false, duration: null };
+    }
+
     const duration = await getFileDuration(file);
     if (duration && duration > maxFileDuration) {
       toast({
-        title: 'File too long',
-        description: `"${file.name}" exceeds the 5-minute duration limit.`,
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-     if (!allowedFormats.includes(file.type)) {
-      toast({
-        title: 'Invalid file format',
-        description: `File type "${file.type}" is not supported for "${file.name}".`,
+        title: t('file_upload_error_duration_title') || 'File too long',
+        description:
+          t('file_upload_error_duration_description')?.replace('{name}', file.name) ||
+          `"${file.name}" exceeds the 5-minute duration limit.`,
         variant: 'destructive'
       });
-      return false;
+      return { valid: false, duration };
     }
-    return true;
+
+    return { valid: true, duration };
   };
 
   const handleFiles = async (filesToProcess) => {
-    for(const file of filesToProcess){
-        const isValid = await validateFile(file);
-        if(isValid) {
-             setFiles(prev => [...prev, {
-                id: crypto.randomUUID(),
-                file,
-                status: 'pending'
-            }]);
-        }
+    for (const file of filesToProcess) {
+      const { valid, duration } = await validateFile(file);
+      if (valid) {
+        const uploadedAt = new Date().toISOString();
+        setFiles((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            file,
+            status: 'pending',
+            duration: duration ?? null,
+            uploadedAt
+          }
+        ]);
+      }
     }
   };
 
@@ -118,54 +156,84 @@ const FileUpload = () => {
     if (pendingFiles.length === 0) return;
     setUploading(true);
 
+    const configSnapshot = normalizeAssemblyConfig(assemblyConfig);
+
     const uploadPromises = pendingFiles.map(async (fileData) => {
       try {
         setFiles(prev => prev.map(f => f.id === fileData.id ? { ...f, status: 'processing' } : f));
         
         const controller = new AbortController();
         uploadControllers.current[fileData.id] = controller;
-        
+
         const formData = new FormData();
         formData.append('file', fileData.file);
 
+        const uploadStartedAt = new Date().toISOString();
+        const optionsPayload = buildTranscriptionOptions(configSnapshot);
+        const metadata = {
+          originalFileName: fileData.file.name,
+          size: fileData.file.size,
+          type: fileData.file.type,
+          duration: fileData.duration,
+          uploadedAt: uploadStartedAt,
+          source: 'file',
+          temporaryId: fileData.id
+        };
+
+        formData.append(
+          'options',
+          JSON.stringify({
+            ...optionsPayload,
+            metadata
+          })
+        );
+
         const response = await fetch(API_URL, {
-            method: 'POST',
-            body: formData,
-            signal: controller.signal,
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
         });
 
         if (controller.signal.aborted) {
           throw new Error('Upload cancelled');
         }
 
-        const data = await response.json();
+        const responseBody = await parseJsonResponse(response);
 
-        if (!response.ok) {
-            const errorMessage = data.error || data.message || `Server responded with ${response.status}`;
-            throw new Error(errorMessage);
+        if (!response.ok || responseBody?.success === false) {
+          const errorMessage =
+            responseBody?.error ||
+            responseBody?.message ||
+            `Server responded with ${response.status}`;
+          throw new Error(errorMessage);
         }
 
-        const transcriptionId = crypto.randomUUID();
+        const apiPayload = responseBody?.data || responseBody?.transcription || responseBody;
 
-        const localTranscriptions = JSON.parse(localStorage.getItem('transcriptions') || '[]');
-        localTranscriptions.unshift({
-          id: transcriptionId,
-          ...data.transcription,
-          created_at: new Date().toISOString(),
-          file_name: fileData.file.name,
-          status: 'completed'
+        const storedRecord = addTranscriptionFromApi(apiPayload, {
+          ...metadata,
+          options: optionsPayload
         });
-        localStorage.setItem('transcriptions', JSON.stringify(localTranscriptions));
 
-        setFiles(prev => prev.map(f => f.id === fileData.id ? { ...f, status: 'completed', id: transcriptionId } : f));
-        return { status: 'completed', id: transcriptionId };
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileData.id
+              ? { ...f, status: 'completed', transcriptId: storedRecord.id }
+              : f
+          )
+        );
+        return { status: 'completed', id: storedRecord.id };
 
       } catch (error) {
         console.error("Upload & Transcribe Error:", error);
         if (error.name === 'AbortError' || error.message === 'Upload cancelled') {
           setFiles(prev => prev.map(f => f.id === fileData.id ? { ...f, status: 'pending' } : f));
         } else {
-          toast({ title: `Error with ${fileData.file.name}`, description: error.message, variant: 'destructive' });
+          toast({
+            title: t('file_upload_error_toast_title') || `Error with ${fileData.file.name}`,
+            description: error.message,
+            variant: 'destructive'
+          });
           setFiles(prev => prev.map(f => f.id === fileData.id ? { ...f, status: 'failed' } : f));
         }
         return { status: 'failed' };
@@ -180,8 +248,11 @@ const FileUpload = () => {
     const completedCount = results.filter(r => r && r.status === 'completed').length;
     if(completedCount > 0) {
         toast({
-          title: 'Transcription Complete!',
-          description: `${completedCount} file(s) have been successfully transcribed.`,
+          title: t('file_upload_toast_success_title') || 'Transcription Complete!',
+          description:
+            t('file_upload_toast_success_description')
+              ?.replace('{count}', completedCount) ||
+            `${completedCount} file(s) have been successfully transcribed.`,
         });
         navigate('/transcriptions');
     }
@@ -197,15 +268,17 @@ const FileUpload = () => {
   
   const getStatusTextAndIcon = (status) => {
     switch (status) {
-      case 'processing': return { text: 'Transcribing...', icon: <Loader2 className="w-5 h-5 animate-spin" /> };
-      case 'completed': return { text: 'Completed', icon: <CheckCircle className="w-5 h-5 text-green-500" /> };
-      case 'failed': return { text: 'Failed', icon: <X className="w-5 h-5 text-red-500" /> };
-      default: return { text: 'Pending', icon: <File className="w-5 h-5" /> };
+      case 'processing': return { text: t('file_upload_status_processing') || 'Transcribing...', icon: <Loader2 className="w-5 h-5 animate-spin" /> };
+      case 'completed': return { text: t('file_upload_status_completed') || 'Completed', icon: <CheckCircle className="w-5 h-5 text-green-500" /> };
+      case 'failed': return { text: t('file_upload_status_failed') || 'Failed', icon: <X className="w-5 h-5 text-red-500" /> };
+      default: return { text: t('file_upload_status_pending') || 'Pending', icon: <File className="w-5 h-5" /> };
     }
   }
 
   return (
     <div className="space-y-6">
+      <AssemblyAIOptions value={normalizedConfig} onChange={handleAssemblyConfigChange} />
+
       <div
         className={`glass-effect border-2 border-dashed rounded-2xl p-12 text-center transition-all ${
           dragActive ? 'border-purple-500 bg-purple-500/10' : 'border-white/10'
@@ -228,21 +301,23 @@ const FileUpload = () => {
           <Upload className="w-8 h-8" />
         </div>
         
-        <h3 className="text-xl font-bold mb-2">Drop files here or click to browse</h3>
+        <h3 className="text-xl font-bold mb-2">{t('file_upload_drop_title') || 'Drop files here or click to browse'}</h3>
         <p className="text-gray-400 mb-4">
-          Max 200MB & 5 min per file
+          {t('file_upload_drop_hint') || 'Max 200MB & 5 min per file'}
         </p>
         
         <label htmlFor="file-upload" className="cursor-pointer">
           <Button as="span" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 pointer-events-none">
-            Select Files
+            {t('file_upload_select_button') || 'Select Files'}
           </Button>
         </label>
       </div>
 
       {files.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold">Selected Files ({files.length})</h3>
+          <h3 className="text-lg font-bold">
+            {(t('file_upload_selected_files') || 'Selected Files') + ` (${files.length})`}
+          </h3>
           
           {files.map((fileData) => {
               const { text, icon } = getStatusTextAndIcon(fileData.status);
@@ -288,7 +363,9 @@ const FileUpload = () => {
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            {uploading ? 'Transcribing...' : `Transcribe ${files.filter(f => f.status === 'pending').length} file(s)`}
+            {uploading
+              ? t('file_upload_transcribing_label') || 'Transcribing...'
+              : `${t('file_upload_transcribe_label') || 'Transcribe'} ${files.filter(f => f.status === 'pending').length} ${t('file_upload_transcribe_suffix') || 'file(s)'}`}
           </Button>
         </div>
       )}
