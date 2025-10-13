@@ -1,79 +1,80 @@
-import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { FileText, Search, MoreHorizontal, Loader2, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import DashboardLayout from '@/components/DashboardLayout';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { toast } from '@/components/ui/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { loadStoredTranscriptions, deleteTranscription } from '@/lib/transcriptionStorage';
+import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet";
+import { motion } from "framer-motion";
+import { FileText, Search, MoreHorizontal, Loader2, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import DashboardLayout from "@/components/DashboardLayout";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
+import { loadStoredTranscriptions, deleteTranscription } from "@/lib/transcriptionStorage";
+import AdPlaceholder from "@/components/AdPlaceholder";
 
 const FEATURE_LABELS = {
-  summarization: 'Özet',
-  auto_highlights: 'Anahtar ifadeler',
-  sentiment_analysis: 'Duygu analizi',
-  entity_detection: 'Varlık tanıma',
-  content_safety: 'Güvenlik',
-  iab_categories: 'IAB',
-  auto_chapters: 'Bölümler',
-  speaker_labels: 'Konuşmacılar',
-  dual_channel: 'Çift kanal',
-  redact_pii: 'PII',
-  redact_pii_audio: 'PII Ses',
-  word_boost: 'Boost',
-  custom_spelling: 'Özel yazım'
+  summarization: "Summaries",
+  auto_highlights: "Highlights",
+  sentiment_analysis: "Sentiment analysis",
+  entity_detection: "Entity detection",
+  content_safety: "Content safety",
+  iab_categories: "IAB categories",
+  auto_chapters: "Auto chapters",
+  speaker_labels: "Speaker labels",
+  dual_channel: "Dual channel",
+  redact_pii: "PII redaction",
+  redact_pii_audio: "PII audio redaction",
+  word_boost: "Word boost",
+  custom_spelling: "Custom spelling",
 };
 
 const formatDuration = (seconds) => {
-  if (!seconds || Number.isNaN(Number(seconds))) return '—';
+  if (!seconds || Number.isNaN(Number(seconds))) return "-";
   const totalSeconds = Math.round(Number(seconds));
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
 const formatDate = (iso) => {
-  if (!iso) return '';
+  if (!iso) return "";
   const date = new Date(iso);
-  return date.toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' });
+  return date.toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" });
 };
 
 const summariseText = (summary) => {
-  if (!summary) return '';
+  if (!summary) return "";
 
-  if (typeof summary === 'string') {
+  if (typeof summary === "string") {
     return summary;
   }
 
   if (Array.isArray(summary)) {
     return summary
       .map((item) => {
-        if (typeof item === 'string') return item;
+        if (typeof item === "string") return item;
         if (item?.text) return item.text;
         if (item?.summary) return item.summary;
-        return '';
+        return "";
       })
       .filter(Boolean)
-      .join(' ');
+      .join(" ");
   }
 
-  if (typeof summary === 'object') {
+  if (typeof summary === "object") {
     if (Array.isArray(summary?.summaries)) {
       return summary.summaries
-        .map((entry) => entry?.text || entry?.summary || '')
+        .map((entry) => entry?.text || entry?.summary || "")
         .filter(Boolean)
-        .join(' ');
+        .join(" ");
     }
     if (summary?.text) return summary.text;
   }
 
-  return '';
+  return "";
 };
 
 const TranscriptionsPage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [transcriptions, setTranscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -85,23 +86,27 @@ const TranscriptionsPage = () => {
     setLoading(false);
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     const updatedTranscriptions = deleteTranscription(id);
     setTranscriptions(updatedTranscriptions);
-    toast({ title: 'Transkripsiyon silindi' });
+    toast({ title: "Transcription deleted" });
   };
 
-  const filteredTranscriptions = transcriptions.filter(t => {
-    const haystack = `${t.file_name ?? ''} ${t.text ?? ''}`.toLowerCase();
+  const filteredTranscriptions = transcriptions.filter((t) => {
+    const haystack = `${t.file_name ?? ""} ${t.text ?? ""}`.toLowerCase();
     return haystack.includes(searchTerm.toLowerCase());
   });
 
   const statusBadge = (status) => {
     switch (status) {
-      case 'completed': return 'bg-green-500/20 text-green-400';
-      case 'processing': return 'bg-yellow-500/20 text-yellow-400';
-      case 'failed': return 'bg-red-500/20 text-red-400';
-      default: return 'bg-gray-500/20 text-gray-400';
+      case "completed":
+        return "bg-green-500/20 text-green-400";
+      case "processing":
+        return "bg-yellow-500/20 text-yellow-400";
+      case "failed":
+        return "bg-red-500/20 text-red-400";
+      default:
+        return "bg-gray-500/20 text-gray-400";
     }
   };
 
@@ -115,8 +120,14 @@ const TranscriptionsPage = () => {
         <div className="space-y-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-3xl font-bold gradient-text">My Transcriptions</h1>
-            <p className="text-gray-400 text-sm mt-1">These are stored in your browser. Clearing your browser data will remove them.</p>
+            <p className="text-gray-400 text-sm mt-1">
+              These are stored in your browser. Clearing your browser data will remove them.
+            </p>
           </motion.div>
+
+          <div className="flex justify-center">
+            <AdPlaceholder className="mx-auto w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
+          </div>
 
           <div className="flex justify-between items-center gap-4">
             <div className="relative w-full max-w-sm">
@@ -160,15 +171,15 @@ const TranscriptionsPage = () => {
                         >
                           <FileText className="w-6 h-6 text-purple-400 flex-shrink-0 mt-1" />
                           <div className="min-w-0 space-y-1">
-                            <p className="font-semibold text-white truncate">{item.file_name || 'Adsız dosya'}</p>
+                            <p className="font-semibold text-white truncate">{item.file_name || "Untitled file"}</p>
                             <div className="text-xs text-gray-400 flex flex-wrap items-center gap-2">
-                              <span>{formatDate(item.created_at)}</span>
-                              <span>•</span>
+                              {item.created_at && <span>{formatDate(item.created_at)}</span>}
+                              <span>|</span>
                               <span>{durationLabel}</span>
-                              {item.metadata?.language_code && (
+                              {(item.metadata?.language_code || item.language_code) && (
                                 <>
-                                  <span>•</span>
-                                  <span>{item.metadata.language_code.toUpperCase()}</span>
+                                  <span>|</span>
+                                  <span>{(item.metadata?.language_code || item.language_code || "").toUpperCase()}</span>
                                 </>
                               )}
                             </div>
@@ -188,13 +199,13 @@ const TranscriptionsPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-effect">
-                              <DropdownMenuItem onClick={() => navigate(`/transcript/${item.id}`)}>Görüntüle</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/transcript/${item.id}`)}>View transcript</DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
                                 onClick={() => handleDelete(item.id)}
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Sil
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -208,9 +219,7 @@ const TranscriptionsPage = () => {
                             </span>
                           ))}
                           {activeFeatures.length > 8 && (
-                            <span className="text-xs text-gray-400">
-                              +{activeFeatures.length - 8} özellik
-                            </span>
+                            <span className="text-xs text-gray-400">+{activeFeatures.length - 8} more</span>
                           )}
                         </div>
                       )}
@@ -218,15 +227,23 @@ const TranscriptionsPage = () => {
                   );
                 })}
                 {filteredTranscriptions.length === 0 && (
-                   <div className="text-center py-12 text-gray-400">
-                      <FileText className="w-12 h-12 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold">Transkripsiyon bulunamadi</h3>
-                      <p>{searchTerm ? `Aramaniz "${searchTerm}" i�in sonu� bulunamadi.` : 'Transkripsiyon olusturmak i�in bir dosya y�kleyin veya bir URL ekleyin.'}</p>
-                   </div>
+                  <div className="text-center py-12 text-gray-400">
+                    <FileText className="w-12 h-12 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold">No transcriptions yet</h3>
+                    <p>
+                      {searchTerm
+                        ? `No results found for "${searchTerm}".`
+                        : "Upload a file or provide a direct media URL to generate a transcription in any of the 30+ supported languages."}
+                    </p>
+                  </div>
                 )}
               </div>
             )}
           </div>
+        </div>
+
+        <div className="flex justify-center mt-10">
+          <AdPlaceholder className="mx-auto w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
         </div>
       </DashboardLayout>
     </>

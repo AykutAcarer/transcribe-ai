@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link2, Loader2, PlayCircle } from 'lucide-react';
 import AssemblyAIOptions from '@/components/AssemblyAIOptions';
@@ -21,6 +21,11 @@ const parseJsonResponse = async (response) => {
 
 const URLImport = ({ assemblyConfig, onAssemblyConfigChange }) => {
   const normalizedConfig = normalizeAssemblyConfig(assemblyConfig);
+
+  useEffect(() => {
+    console.log('[URLImport] incoming assemblyConfig:', assemblyConfig);
+    console.log('[URLImport] normalizedConfig:', normalizedConfig);
+  }, [assemblyConfig, normalizedConfig]);
   const [audioUrl, setAudioUrl] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,7 +50,11 @@ const URLImport = ({ assemblyConfig, onAssemblyConfigChange }) => {
         setLoading(true);
 
         const configSnapshot = normalizeAssemblyConfig(assemblyConfig);
+        console.log('[URLImport] config snapshot:', configSnapshot);
+        console.log('[URLImport] requested language_code:', configSnapshot.transcriptionOptions?.language_code);
+        console.log('[URLImport] language_detection:', configSnapshot.transcriptionOptions?.language_detection);
         const optionsPayload = buildTranscriptionOptions(configSnapshot);
+        console.log('[URLImport] options payload:', optionsPayload);
         const temporaryId =
           typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
             ? crypto.randomUUID()
@@ -54,11 +63,14 @@ const URLImport = ({ assemblyConfig, onAssemblyConfigChange }) => {
           originalFileName: displayName || trimmedUrl,
           source: 'url',
           audioUrl: trimmedUrl,
+          language_code: optionsPayload.transcriptionOptions.language_code ?? null,
+          language_detection: optionsPayload.transcriptionOptions.language_detection !== false,
           uploadedAt: new Date().toISOString(),
           temporaryId
         };
+        console.log('[URLImport] metadata:', metadata);
 
-        const response = await fetch('/api/transcribe/url', {
+        const response = await fetch('/api/assemblyai/transcribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -67,6 +79,7 @@ const URLImport = ({ assemblyConfig, onAssemblyConfigChange }) => {
             metadata
           })
         });
+        console.log('[URLImport] payload sent to /api/assemblyai/transcribe:', { audioUrl: trimmedUrl, ...optionsPayload, metadata });
 
         const responseBody = await parseJsonResponse(response);
         if (!response.ok || responseBody?.success === false) {
@@ -163,3 +176,4 @@ const URLImport = ({ assemblyConfig, onAssemblyConfigChange }) => {
 };
 
 export default URLImport;
+

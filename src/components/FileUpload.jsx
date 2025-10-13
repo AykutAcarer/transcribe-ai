@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, File, X, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,11 @@ const parseJsonResponse = async (response) => {
 
 const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
   const normalizedConfig = normalizeAssemblyConfig(assemblyConfig);
+
+  useEffect(() => {
+    console.log('[FileUpload] incoming assemblyConfig:', assemblyConfig);
+    console.log('[FileUpload] normalizedConfig:', normalizedConfig);
+  }, [assemblyConfig, normalizedConfig]);
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -28,7 +33,7 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
   const uploadControllers = useRef({});
   const { t } = useLanguage();
   
-  const API_URL = '/api/transcribe';
+  const API_URL = '/api/assemblyai/transcribe';
 
   const handleAssemblyConfigChange = useCallback(
     (nextConfig) => {
@@ -128,6 +133,9 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
     setUploading(true);
 
     const configSnapshot = normalizeAssemblyConfig(assemblyConfig);
+    console.log('[FileUpload] upload initiated with config:', configSnapshot);
+    console.log('[FileUpload] requested language_code:', configSnapshot.transcriptionOptions?.language_code);
+    console.log('[FileUpload] language_detection:', configSnapshot.transcriptionOptions?.language_detection);
 
     const uploadPromises = pendingFiles.map(async (fileData) => {
       try {
@@ -141,14 +149,18 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
 
         const uploadStartedAt = new Date().toISOString();
         const optionsPayload = buildTranscriptionOptions(configSnapshot);
+        console.log('[FileUpload] options payload:', optionsPayload);
         const metadata = {
           originalFileName: fileData.file.name,
           size: fileData.file.size,
           type: fileData.file.type,
+          language_code: optionsPayload.transcriptionOptions.language_code ?? null,
+          language_detection: optionsPayload.transcriptionOptions.language_detection !== false,
           uploadedAt: uploadStartedAt,
           source: 'file',
           temporaryId: fileData.id
         };
+        console.log('[FileUpload] metadata:', metadata);
 
         formData.append(
           'options',
@@ -157,6 +169,12 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
             metadata
           })
         );
+
+        try {
+          console.log('[FileUpload] FormData options:', JSON.parse(formData.get('options')));
+        } catch (error) {
+          console.warn('[FileUpload] Failed to inspect FormData options:', error);
+        }
 
         const response = await fetch(API_URL, {
           method: 'POST',
@@ -344,3 +362,4 @@ const FileUpload = ({ assemblyConfig, onAssemblyConfigChange }) => {
 };
 
 export default FileUpload;
+

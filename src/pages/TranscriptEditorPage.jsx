@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -32,6 +32,64 @@ import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph as DocxParagraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { loadStoredTranscriptions, updateStoredTranscription } from '@/lib/transcriptionStorage';
+
+/**
+ * Convert words array to segments if segments are missing
+ */
+const convertWordsToSegments = (words = [], fullText = '') => {
+  if (!words || words.length === 0) {
+    if (fullText) {
+      return [{
+        text: fullText,
+        start: 0,
+        end: 0,
+        confidence: 1.0
+      }];
+    }
+    return [];
+  }
+
+  const segments = [];
+  let currentSegment = {
+    text: '',
+    start: words[0].start,
+    end: words[0].end,
+    words: []
+  };
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const nextWord = words[i + 1];
+    
+    currentSegment.words.push(word.text);
+    currentSegment.end = word.end;
+    
+    // Start new segment on: long pause, punctuation, or last word
+    const hasLongPause = nextWord && (nextWord.start - word.end) > 1000;
+    const hasPunctuation = word.text && /[.!?]$/.test(word.text.trim());
+    const isLastWord = i === words.length - 1;
+    
+    if (hasLongPause || hasPunctuation || isLastWord) {
+      segments.push({
+        text: currentSegment.words.join(' '),
+        start: currentSegment.start / 1000, // ms to seconds
+        end: currentSegment.end / 1000,
+        confidence: word.confidence || 0.9
+      });
+      
+      if (nextWord) {
+        currentSegment = {
+          text: '',
+          start: nextWord.start,
+          end: nextWord.end,
+          words: []
+        };
+      }
+    }
+  }
+
+  return segments;
+};
 
 const REMOTE_MEDIA_DOC = 'https://www.assemblyai.com/docs/api-reference/upload';
 
@@ -180,11 +238,11 @@ const TranscriptEditorPage = () => {
     assembly.text ??
     transcription?.transcript_text ??
     '';
-  const segments =
-    transcription?.segments ??
-    assembly.segments ??
-    assembly.transcript_json?.segments ??
-    [];
+  let segments =
+  transcription?.segments ??
+  assembly.segments ??
+  assembly.transcript_json?.segments ??
+  [];
   const paragraphs = assembly.paragraphs ?? [];
   const highlights = assembly.auto_highlights_result?.results ?? [];
   const sentiment = assembly.sentiment_analysis_results ?? [];
@@ -198,6 +256,18 @@ const TranscriptEditorPage = () => {
     (assembly.redacted_audio_url ? { redacted_audio_url: assembly.redacted_audio_url } : null);
   const featureSelections = transcription?.feature_selections ?? assembly.feature_selections ?? {};
   const requestOptions = assembly.request_options ?? {};
+
+  // Build UI segments: prefer paragraphs, else segments, else derive from words or fallback to full text
+  const uiSegments = useMemo(() => {
+    if (Array.isArray(paragraphs) && paragraphs.length > 0) return paragraphs;
+    if (Array.isArray(segments) && segments.length > 0) return segments;
+    const baseWords = Array.isArray(assembly.words)
+      ? assembly.words
+      : Array.isArray(transcription?.words)
+        ? transcription.words
+        : [];
+    return convertWordsToSegments(baseWords, transcriptText || '');
+  }, [paragraphs, segments, assembly.words, transcription?.words, transcriptText]);
 
   const summaryText = useMemo(
     () => summariseText(transcription?.summary ?? assembly.summary),
@@ -593,7 +663,7 @@ const TranscriptEditorPage = () => {
                   </div>
                 </div>
                 <div className="max-h-[60vh] overflow-y-auto space-y-5 pr-2">
-                  {(paragraphs.length ? paragraphs : segments).map((segment, index) => (
+                  {uiSegments.map((segment, index) => (
                     <div
                       key={index}
                       className="rounded-xl border border-white/5 bg-gray-900/60 p-4 hover:border-purple-500/40 transition-colors"
@@ -610,11 +680,17 @@ const TranscriptEditorPage = () => {
                       <p className="mt-3 text-sm text-gray-200 leading-relaxed">{segment.text}</p>
                     </div>
                   ))}
-                  {segments.length === 0 && (
-                    <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-gray-900/40 py-12 text-gray-400">
-                      <FileText className="h-10 w-10" />
-                      <p>Metin bulunamadı.</p>
-                    </div>
+                  {uiSegments.length === 0 && (
+                    transcriptText ? (
+                      <div className="rounded-xl border border-white/5 bg-gray-900/60 p-6">
+                        <p className="whitespace-pre-wrap text-gray-200 text-sm leading-relaxed">{transcriptText}</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-gray-900/40 py-12 text-gray-400">
+                        <FileText className="h-10 w-10" />
+                        <p>Metin bulunamadi.</p>
+                      </div>
+                    )
                   )}
                 </div>
               </div>

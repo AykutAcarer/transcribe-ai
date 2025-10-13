@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import formidable from 'formidable';
 import fs from 'fs';
 import 'dotenv/config';
@@ -120,7 +120,7 @@ async function probeRemoteMedia(rawUrl) {
   try {
     response = await fetchWithTimeout(rawUrl, { method: 'HEAD' });
   } catch (error) {
-    return { ok: false, error: `URL erişilemedi: ${error.message}` };
+    return { ok: false, error: `URL erisilemedi: ${error.message}` };
   }
 
   if (!response.ok) {
@@ -136,7 +136,7 @@ async function probeRemoteMedia(rawUrl) {
         headers: { Range: 'bytes=0-0' }
       });
     } catch (error) {
-      return { ok: false, error: `URL erişilemedi: ${error.message}` };
+      return { ok: false, error: `URL erisilemedi: ${error.message}` };
     }
   }
 
@@ -245,7 +245,16 @@ function secondsFromMs(ms) {
   return ms / 1000;
 }
 
-function buildSegments(paragraphs, words, transcriptText) {
+
+function isTranscriptEmpty(transcript) {
+  try {
+    const text = (transcript?.text || '').trim();
+    const words = Array.isArray(transcript?.words) ? transcript.words : [];
+    return text.length === 0 && words.length === 0;
+  } catch {
+    return false;
+  }
+}function buildSegments(paragraphs, words, transcriptText) {
   if (Array.isArray(paragraphs) && paragraphs.length > 0) {
     return paragraphs.map((paragraph, index) => ({
       id: paragraph.id ?? index,
@@ -353,8 +362,8 @@ async function collectTranscriptExtras(transcriptId, clientOptions) {
 }
 
 function buildTranscriptionPayload({
-  transcript,
-  transcriptionOptions,
+  finalTranscript,
+  finalTranscriptionOptions,
   clientOptions,
   featureSelections,
   metadata,
@@ -389,7 +398,7 @@ function buildTranscriptionPayload({
     segments,
     subtitles: extras.subtitles ?? {},
     redacted_audio: extras.redactedAudio ?? null,
-    request_options: transcriptionOptions,
+    request_options: finalTranscriptionOptions,
     client_options: clientOptions,
     feature_selections: featureSelections,
     metadata,
@@ -400,7 +409,7 @@ function buildTranscriptionPayload({
 function ensureAssemblyAIKey(res) {
   if (!ASSEMBLYAI_API_KEY) {
     res.status(500).json({
-      error: 'AssemblyAI API anahtarı bulunamadı. Lütfen .env dosyasına ASSEMBLYAI_API_KEY ekleyin.'
+      error: 'AssemblyAI API anahtari bulunamadi. L�tfen .env dosyasina ASSEMBLYAI_API_KEY ekleyin.'
     });
     return false;
   }
@@ -417,7 +426,7 @@ app.post('/api/transcribe', async (req, res) => {
     const file = pickFile(files);
 
     if (!file) {
-      return res.status(400).json({ error: 'Yüklenecek bir dosya bulunamadı.' });
+      return res.status(400).json({ error: 'Y�klenecek bir dosya bulunamadi.' });
     }
 
     uploadedFilePath = file.filepath;
@@ -453,12 +462,12 @@ app.post('/api/transcribe', async (req, res) => {
 
     console.log(`AssemblyAI transcription completed: ${transcript.id}`);
 
-    const extras = await collectTranscriptExtras(transcript.id, clientOptions);
-    const features = deriveFeatureSelections(transcriptionOptions, featureSelections);
+    const extras = await collectTranscriptExtras(finalTranscript.id, clientOptions);
+    const features = deriveFeatureSelections(finalTranscriptionOptions, featureSelections);
 
     const payload = buildTranscriptionPayload({
-      transcript,
-      transcriptionOptions,
+      finalTranscript,
+      finalTranscriptionOptions,
       clientOptions,
       featureSelections: features,
       metadata: {
@@ -473,14 +482,14 @@ app.post('/api/transcribe', async (req, res) => {
   } catch (error) {
     console.error('Transcription error:', error);
     res.status(500).json({
-      error: error.message || 'Transkripsiyon sırasında bir hata oluştu.',
+      error: error.message || 'Transkripsiyon sirasinda bir hata olustu.',
       details: error.response?.data ?? error.stack
     });
   } finally {
     if (uploadedFilePath) {
       fs.promises
         .unlink(uploadedFilePath)
-        .catch((cleanupError) => console.warn('Dosya temizleme hatası:', cleanupError.message));
+        .catch((cleanupError) => console.warn('Dosya temizleme hatasi:', cleanupError.message));
     }
   }
 });
@@ -498,31 +507,31 @@ app.post('/api/transcribe/url', async (req, res) => {
     } = req.body ?? {};
 
     if (!audioUrl) {
-      return res.status(400).json({ error: 'audioUrl alanı zorunludur.' });
+      return res.status(400).json({ error: 'audioUrl alani zorunludur.' });
     }
 
     let parsedUrl;
     try {
       parsedUrl = new URL(audioUrl);
     } catch (parseError) {
-      return res.status(400).json({ error: 'Geçerli bir http veya https URL sağlayın.' });
+      return res.status(400).json({ error: 'Ge�erli bir http veya https URL saglayin.' });
     }
 
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return res.status(400).json({ error: 'URL yalnızca http veya https protokollerini destekler.' });
+      return res.status(400).json({ error: 'URL yalnizca http veya https protokollerini destekler.' });
     }
 
     const probe = await probeRemoteMedia(audioUrl);
     if (!probe.ok) {
-      const message = probe.error ? probe.error : `URL ${probe.status || ''} durum kodu döndürdü.`;
+      const message = probe.error ? probe.error : `URL ${probe.status || ''} durum kodu d�nd�rd�.`;
       return res.status(400).json({
-        error: `${message} Lütfen herkese açık olarak erişilebilen bir ses/video dosyası kullanın. Daha fazla bilgi: ${MEDIA_DOC_URL}`
+        error: `${message} L�tfen herkese a�ik olarak erisilebilen bir ses/video dosyasi kullanin. Daha fazla bilgi: ${MEDIA_DOC_URL}`
       });
     }
 
     if (!probe.isMediaType && !probe.extensionLooksLikeMedia) {
       return res.status(400).json({
-        error: `Sağlanan bağlantı doğrudan bir ses/video dosyasına işaret etmiyor. AssemblyAI API'sı, ${MEDIA_DOC_URL} adresinde belirtildiği gibi herkese açık erişilebilen medya URL'leri gerektirir.`,
+        error: `Saglanan baglanti dogrudan bir ses/video dosyasina isaret etmiyor. AssemblyAI API'si, ${MEDIA_DOC_URL} adresinde belirtildigi gibi herkese a�ik erisilebilen medya URL'leri gerektirir.`,
         documentation: MEDIA_DOC_URL
       });
     }
@@ -545,12 +554,32 @@ app.post('/api/transcribe/url', async (req, res) => {
       pollingOptions
     );
 
-    const extras = await collectTranscriptExtras(transcript.id, clientOptions);
-    const features = deriveFeatureSelections(transcriptionOptions, featureSelections);
+    
+    let finalTranscript = transcript;
+    let finalTranscriptionOptions = transcriptionOptions;
+    if (isTranscriptEmpty(finalTranscript) && (transcriptionOptions?.language_detection !== true)) {
+      try {
+        const fb = { ...transcriptionOptions };
+        delete fb.language_code;
+        fb.language_detection = true;
+        console.log('Empty transcript from URL; retrying with language_detection=true');
+        const retryUrl = await assemblyai.transcripts.transcribe(
+          { audio: audioUrl, ...fb },
+          pollingOptions
+        );
+        if (!isTranscriptEmpty(retryUrl)) {
+          finalTranscript = retryUrl;
+          finalTranscriptionOptions = fb;
+        }
+      } catch (e) {
+        console.warn('URL fallback language detection retry failed:', e?.message || e);
+      }
+    }const extras = await collectTranscriptExtras(finalTranscript.id, clientOptions);
+    const features = deriveFeatureSelections(finalTranscriptionOptions, featureSelections);
 
     const payload = buildTranscriptionPayload({
-      transcript,
-      transcriptionOptions,
+      finalTranscript,
+      finalTranscriptionOptions,
       clientOptions,
       featureSelections: features,
       metadata: {
@@ -568,9 +597,9 @@ app.post('/api/transcribe/url', async (req, res) => {
 
     res.status(200).json({ success: true, data: payload });
   } catch (error) {
-    console.error('URL transkripsiyon hatası:', error);
+    console.error('URL transkripsiyon hatasi:', error);
     res.status(500).json({
-      error: error.message || 'Transkripsiyon sırasında bir hata oluştu.',
+      error: error.message || 'Transkripsiyon sirasinda bir hata olustu.',
       details: error.response?.data ?? error.stack
     });
   }
@@ -585,12 +614,12 @@ app.get('/api/transcripts/:id', async (req, res) => {
   try {
     const transcript = await assemblyai.transcripts.get(id);
     if (!transcript) {
-      return res.status(404).json({ error: 'Transcript bulunamadı.' });
+      return res.status(404).json({ error: 'Transcript bulunamadi.' });
     }
 
     const extras = await collectTranscriptExtras(id, clientOptions);
     const payload = buildTranscriptionPayload({
-      transcript,
+      finalTranscript,
       transcriptionOptions: {},
       clientOptions,
       featureSelections: deriveFeatureSelections({}, {}),
@@ -602,7 +631,7 @@ app.get('/api/transcripts/:id', async (req, res) => {
   } catch (error) {
     console.error('Transcript fetch error:', error);
     res.status(500).json({
-      error: error.message || 'Transcript bilgileri alınamadı.',
+      error: error.message || 'Transcript bilgileri alinamadi.',
       details: error.response?.data ?? error.stack
     });
   }
@@ -616,7 +645,7 @@ app.get('/api/transcripts/:id/subtitles', async (req, res) => {
   const charsPerCaption = Number(req.query.charsPerCaption ?? DEFAULT_CLIENT_OPTIONS.subtitleCharsPerCaption);
 
   if (!SUBTITLE_FORMAT_WHITELIST.has(format)) {
-    return res.status(400).json({ error: `Desteklenmeyen altyazı formatı: ${format}` });
+    return res.status(400).json({ error: `Desteklenmeyen altyazi formati: ${format}` });
   }
 
   try {
@@ -625,7 +654,7 @@ app.get('/api/transcripts/:id/subtitles', async (req, res) => {
   } catch (error) {
     console.error('Subtitle fetch error:', error);
     res.status(500).json({
-      error: error.message || 'Altyazı oluşturulamadı.',
+      error: error.message || 'Altyazi olusturulamadi.',
       details: error.response?.data ?? error.stack
     });
   }
@@ -639,14 +668,14 @@ app.get('/api/transcripts/:id/redacted-audio', async (req, res) => {
   try {
     const response = await assemblyai.transcripts.redactedAudio(id);
     if (!response?.redacted_audio_url) {
-      return res.status(404).json({ error: 'Redakte edilmiş ses bulunamadı.' });
+      return res.status(404).json({ error: 'Redakte edilmis ses bulunamadi.' });
     }
 
     res.status(200).json({ success: true, data: response });
   } catch (error) {
     console.error('Redacted audio fetch error:', error);
     res.status(500).json({
-      error: error.message || 'Redakte edilmiş ses alınamadı.',
+      error: error.message || 'Redakte edilmis ses alinamadi.',
       details: error.response?.data ?? error.stack
     });
   }
@@ -659,7 +688,7 @@ app.post('/api/transcripts/:id/word-search', async (req, res) => {
   const { words } = req.body ?? {};
 
   if (!Array.isArray(words) || words.length === 0) {
-    return res.status(400).json({ error: 'words alanı zorunludur ve en az bir kelime içermelidir.' });
+    return res.status(400).json({ error: 'words alani zorunludur ve en az bir kelime i�ermelidir.' });
   }
 
   try {
@@ -668,7 +697,7 @@ app.post('/api/transcripts/:id/word-search', async (req, res) => {
   } catch (error) {
     console.error('Word search error:', error);
     res.status(500).json({
-      error: error.message || 'Kelime araması başarısız oldu.',
+      error: error.message || 'Kelime aramasi basarisiz oldu.',
       details: error.response?.data ?? error.stack
     });
   }
@@ -730,7 +759,7 @@ app.post('/api/lemur', async (req, res) => {
   } catch (error) {
     console.error('LeMUR error:', error);
     res.status(500).json({
-      error: error.message || 'LeMUR isteği başarısız oldu.',
+      error: error.message || 'LeMUR istegi basarisiz oldu.',
       details: error.response?.data ?? error.stack
     });
   }
@@ -739,7 +768,7 @@ app.post('/api/lemur', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'Server çalışıyor',
+    message: 'Server �alisiyor',
     service: 'AssemblyAI',
     hasAssemblyAiKey: Boolean(ASSEMBLYAI_API_KEY)
   });
@@ -748,5 +777,218 @@ app.get('/api/health', (req, res) => {
 app.listen(PORT, 'localhost', () => {
   console.log(`API server running on http://localhost:${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+});
+
+// -----------------------------
+// Minimal unified upload route
+// -----------------------------
+
+function sanitizeTranscriptionOptionsMinimal(input = {}) {
+  const out = {};
+  const b = (v) => (typeof v === 'boolean' ? v : undefined);
+  const s = (v) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  const n = (v) => {
+    const num = Number(v);
+    return Number.isFinite(num) ? num : undefined;
+  };
+  const arr = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim()) : undefined);
+
+  out.language_code = undefined;
+  out.language_detection = true;
+
+  // Core quality toggles
+  out.punctuate = b(input.punctuate) !== undefined ? b(input.punctuate) : true;
+  out.format_text = b(input.format_text) !== undefined ? b(input.format_text) : true;
+
+  // Common features
+  const keysBool = [
+    'speaker_labels',
+    'dual_channel',
+    'disfluencies',
+    'filter_profanity',
+    'auto_highlights',
+    'sentiment_analysis',
+    'entity_detection',
+    'content_safety',
+    'iab_categories',
+    'summarization',
+    'summary_auto_chapters',
+    'redact_pii',
+    'redact_pii_audio'
+  ];
+  keysBool.forEach((k) => {
+    const v = b(input[k]);
+    if (v !== undefined) out[k] = v;
+  });
+
+  const keysNum = ['speakers_expected', 'audio_start_from', 'audio_end_at', 'speech_threshold'];
+  keysNum.forEach((k) => {
+    const v = n(input[k]);
+    if (v !== undefined) out[k] = v;
+  });
+
+  const keysStr = ['summary_model', 'summary_type', 'boost_param', 'redact_pii_audio_quality'];
+  keysStr.forEach((k) => {
+    const v = s(input[k]);
+    if (v !== undefined) out[k] = v;
+  });
+
+  const keysArr = ['word_boost', 'custom_spelling', 'redact_pii_policies'];
+  keysArr.forEach((k) => {
+    const v = arr(input[k]);
+    if (v !== undefined) out[k] = v;
+  });
+
+  return out;
+}
+
+async function transcribeWithFallback(audio, opts, pollingOptions) {
+  // first attempt
+  let usedOpts = { ...opts };
+  let result = await assemblyai.transcripts.transcribe({ audio, ...usedOpts }, pollingOptions);
+
+  if (isTranscriptEmpty(result) && usedOpts.language_detection !== true) {
+    try {
+      const fb = { ...usedOpts };
+      delete fb.language_code;
+      fb.language_detection = true;
+      const retry = await assemblyai.transcripts.transcribe({ audio, ...fb }, pollingOptions);
+      if (!isTranscriptEmpty(retry)) {
+        result = retry;
+        usedOpts = fb;
+      }
+    } catch (e) {
+      console.warn('Fallback language detection retry failed:', e?.message || e);
+    }
+  }
+
+  return { transcript: result, usedOptions: usedOpts };
+}
+
+app.post('/api/assemblyai/transcribe', async (req, res) => {
+  if (!ensureAssemblyAIKey(res)) return;
+
+  const contentType = req.headers['content-type'] || '';
+  const pollingOptions = {};
+
+  try {
+    if (contentType.includes('application/json')) {
+      const { audioUrl, options: maybeOptions = {},
+        clientOptions: rawClientOptions = {},
+        metadata = {}
+      } = req.body ?? {};
+
+      if (!audioUrl || typeof audioUrl !== 'string') {
+        return res.status(400).json({ error: 'audioUrl is required (string).' });
+      }
+
+      const clientOptions = deriveClientOptions(rawClientOptions || {});
+      if (clientOptions.pollingInterval > 0) pollingOptions.pollingInterval = clientOptions.pollingInterval;
+      if (clientOptions.pollingTimeout >= 0) pollingOptions.pollingTimeout = clientOptions.pollingTimeout;
+
+      const sanitized = sanitizeTranscriptionOptionsMinimal(options || {});
+      const { transcript, usedOptions } = await transcribeWithFallback(audioUrl, sanitized, pollingOptions);
+
+      let segments = [];
+      try {
+        segments = buildSegments([], Array.isArray(transcript.words) ? transcript.words : [], transcript.text || '');
+      } catch {}
+
+      const payload = {
+        id: transcript.id,
+        status: transcript.status,
+        text: transcript.text ?? '',
+        confidence: transcript.confidence ?? null,
+        audio_duration: transcript.audio_duration ?? null,
+        language_code: transcript.language_code ?? null,
+        language_confidence: transcript.language_confidence ?? null,
+        words: Array.isArray(transcript.words) ? transcript.words : [],
+        utterances: Array.isArray(transcript.utterances) ? transcript.utterances : [],
+        auto_highlights_result: transcript.auto_highlights_result ?? null,
+        content_safety_labels: transcript.content_safety_labels ?? null,
+        iab_categories_result: transcript.iab_categories_result ?? null,
+        chapters: transcript.chapters ?? [],
+        summary: transcript.summary ?? null,
+        summary_auto_chapters: transcript.summary_auto_chapters ?? null,
+        request_options: usedOptions,
+        client_options: clientOptions,
+        metadata: { ...metadata, source: 'url', audioUrl },
+        segments,
+        raw: transcript
+      };
+
+      return res.status(200).json({ success: true, data: payload });
+    }
+
+    // multipart/form-data (file upload)
+    const form = formidable(FORMIDABLE_OPTIONS);
+    const { fields, files } = await new Promise((resolve, reject) => {
+      form.parse(req, (err, flds, fls) => (err ? reject(err) : resolve({ fields: flds, files: fls })));
+    });
+
+    const fileField = files.file ?? files.audio ?? null;
+    const file = Array.isArray(fileField) ? fileField[0] : fileField;
+    if (!file?.filepath) {
+      return res.status(400).json({ error: 'No file uploaded.' });
+    }
+
+    const parsedOptions = (() => {
+      const raw = fields.options;
+      if (!raw) return {};
+      try {
+        return typeof raw === 'string' ? JSON.parse(raw) : JSON.parse(raw?.[0] || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
+    const { transcriptionOptions: tOpts = {}, options = {}, clientOptions: rawClientOptions = {}, metadata: incomingMeta = {} } = parsedOptions;
+    const optsSource2 = (options && Object.keys(options).length) ? options : (tOpts || {});
+    const clientOptions = deriveClientOptions(rawClientOptions || {});
+    if (clientOptions.pollingInterval > 0) pollingOptions.pollingInterval = clientOptions.pollingInterval;
+    if (clientOptions.pollingTimeout >= 0) pollingOptions.pollingTimeout = clientOptions.pollingTimeout;
+
+    const sanitized = sanitizeTranscriptionOptionsMinimal(options || {});
+    const { transcript, usedOptions } = await transcribeWithFallback(file.filepath, sanitized, pollingOptions);
+
+    let segments = [];
+    try {
+      segments = buildSegments([], Array.isArray(transcript.words) ? transcript.words : [], transcript.text || '');
+    } catch {}
+
+    const payload = {
+      id: transcript.id,
+      status: transcript.status,
+      text: transcript.text ?? '',
+      confidence: transcript.confidence ?? null,
+      audio_duration: transcript.audio_duration ?? null,
+      language_code: transcript.language_code ?? null,
+      language_confidence: transcript.language_confidence ?? null,
+      words: Array.isArray(transcript.words) ? transcript.words : [],
+      utterances: Array.isArray(transcript.utterances) ? transcript.utterances : [],
+      auto_highlights_result: transcript.auto_highlights_result ?? null,
+      content_safety_labels: transcript.content_safety_labels ?? null,
+      iab_categories_result: transcript.iab_categories_result ?? null,
+      chapters: transcript.chapters ?? [],
+      summary: transcript.summary ?? null,
+      summary_auto_chapters: transcript.summary_auto_chapters ?? null,
+      request_options: usedOptions,
+      client_options: clientOptions,
+      metadata: {
+        ...incomingMeta,
+        originalFileName: file.originalFilename ?? incomingMeta.originalFileName ?? file.newFilename ?? null,
+        size: file.size ?? incomingMeta.size ?? null,
+        source: 'file'
+      },
+      segments,
+      raw: transcript
+    };
+
+    try { await fs.promises.unlink(file.filepath); } catch {}
+    return res.status(200).json({ success: true, data: payload });
+  } catch (error) {
+    console.error('Unified upload error:', error);
+    return res.status(500).json({ error: error.message || 'Upload/transcription failed.' });
+  }
 });
 

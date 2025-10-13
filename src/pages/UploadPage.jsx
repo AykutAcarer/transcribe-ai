@@ -2,6 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
+import AdPlaceholder from '@/components/AdPlaceholder';
 import FileUpload from '@/components/FileUpload';
 import URLImport from '@/components/URLImport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,6 +39,10 @@ const UploadPage = () => {
             </p>
           </div>
 
+          <div className="flex justify-center mb-10">
+            <AdPlaceholder className="w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
+          </div>
+
           <Tabs defaultValue="file" className="w-full">
             <TabsList className="grid w-full grid-cols-2 glass-effect p-1 h-auto mb-6">
               <TabsTrigger value="file" className="flex items-center gap-2">
@@ -49,9 +54,13 @@ const UploadPage = () => {
                 {t('upload_tab_url') || 'Import from URL'}
               </TabsTrigger>
             </TabsList>
+
+            
+
             <TabsContent value="file">
               <FileUpload assemblyConfig={assemblyConfig} onAssemblyConfigChange={setAssemblyConfig} />
             </TabsContent>
+
             <TabsContent value="url">
               <div className="glass-effect border border-yellow-400/40 bg-yellow-500/10 text-sm text-yellow-100/90 p-4 rounded-xl mb-4 flex gap-3">
                 <AlertTriangle className="w-5 h-5 flex-shrink-0 text-yellow-300" />
@@ -59,19 +68,23 @@ const UploadPage = () => {
                   <p className="font-semibold text-yellow-200 mb-1">Direct-download URLs only</p>
                   <p className="mb-2">
                     TranscribeAI can only fetch media links that are publicly accessible and point directly to an audio or video file.
-                    Streaming sites such as YouTube or Vimeo are not supported.
+                    Streaming platforms such as YouTube or Vimeo are not supported.
                   </p>
                   <p className="mb-1">Accepted sources include:</p>
                   <ul className="list-disc list-inside space-y-1 text-yellow-100/90">
-                    <li>AWS/GCP/Azure object storage with a direct file link or pre-signed URL</li>
-                    <li>Direct-download links from services like Google Drive or GitHub (≤ 100&nbsp;MB)</li>
-                    <li>Any HTTPS URL that serves the media file immediately</li>
+                    <li>Pre-signed or public links from AWS, GCP, Azure, or other cloud storage</li>
+                    <li>Direct-download links from Google Drive or GitHub (100 MB or smaller)</li>
+                    <li>Any HTTPS URL that immediately serves the media file</li>
                   </ul>
                 </div>
               </div>
               <URLImport assemblyConfig={assemblyConfig} onAssemblyConfigChange={setAssemblyConfig} />
             </TabsContent>
           </Tabs>
+
+          <div className="mt-12 flex justify-center">
+            <AdPlaceholder className="w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
+          </div>
         </motion.div>
       </DashboardLayout>
     </>
@@ -79,3 +92,9 @@ const UploadPage = () => {
 };
 
 export default UploadPage;
+
+
+
+
+
+

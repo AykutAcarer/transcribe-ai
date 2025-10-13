@@ -8,6 +8,7 @@ import { Mic, Star, FileText, Share2, Search, UploadCloud, Cpu, Edit3, Rocket } 
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import AdPlaceholder from '@/components/AdPlaceholder';
+import GoogleAd from '@/components/GoogleAd';
 import Footer from '@/components/Footer';
 
 const Flag = ({ code }) => (
@@ -150,6 +151,7 @@ const LandingPage = () => {
               </motion.div>
             </div>
           </section>
+
 
           <section id="how-it-works" className="py-20 px-4 bg-black/20">
             <div className="container mx-auto">
@@ -313,6 +315,12 @@ const LandingPage = () => {
               </div>
             </div>
           </section>
+
+          <section className="px-4 pb-16">
+            <div className="container mx-auto flex justify-center">
+              <AdPlaceholder className="mx-auto w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
+            </div>
+          </section>
         </main>
         
         <Footer />
@@ -323,3 +331,5 @@ const LandingPage = () => {
 
 export default LandingPage;
   
+
+
