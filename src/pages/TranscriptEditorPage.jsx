@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
-import { useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Helmet } from "react-helmet";
+import { useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   Download,
   DownloadCloud,
@@ -20,69 +20,79 @@ import {
   GaugeCircle,
   Tag,
   Users,
-  ArrowRightCircle
-} from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
-import { toast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph as DocxParagraph, TextRun } from 'docx';
-import { saveAs } from 'file-saver';
-import { loadStoredTranscriptions, updateStoredTranscription } from '@/lib/transcriptionStorage';
+  ArrowRightCircle,
+} from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import jsPDF from "jspdf";
+import { Document, Packer, Paragraph as DocxParagraph, TextRun } from "docx";
+import { saveAs } from "file-saver";
+import {
+  loadStoredTranscriptions,
+  updateStoredTranscription,
+} from "@/lib/transcriptionStorage";
 
 /**
  * Convert words array to segments if segments are missing
  */
-const convertWordsToSegments = (words = [], fullText = '') => {
+const convertWordsToSegments = (words = [], fullText = "") => {
   if (!words || words.length === 0) {
     if (fullText) {
-      return [{
-        text: fullText,
-        start: 0,
-        end: 0,
-        confidence: 1.0
-      }];
+      return [
+        {
+          text: fullText,
+          start: 0,
+          end: 0,
+          confidence: 1.0,
+        },
+      ];
     }
     return [];
   }
 
   const segments = [];
   let currentSegment = {
-    text: '',
+    text: "",
     start: words[0].start,
     end: words[0].end,
-    words: []
+    words: [],
   };
 
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
     const nextWord = words[i + 1];
-    
+
     currentSegment.words.push(word.text);
     currentSegment.end = word.end;
-    
+
     // Start new segment on: long pause, punctuation, or last word
-    const hasLongPause = nextWord && (nextWord.start - word.end) > 1000;
+    const hasLongPause = nextWord && nextWord.start - word.end > 1000;
     const hasPunctuation = word.text && /[.!?]$/.test(word.text.trim());
     const isLastWord = i === words.length - 1;
-    
+
     if (hasLongPause || hasPunctuation || isLastWord) {
       segments.push({
-        text: currentSegment.words.join(' '),
+        text: currentSegment.words.join(" "),
         start: currentSegment.start, // Keep in milliseconds
         end: currentSegment.end,
-        confidence: word.confidence || 0.9
+        confidence: word.confidence || 0.9,
       });
-      
+
       if (nextWord) {
         currentSegment = {
-          text: '',
+          text: "",
           start: nextWord.start,
           end: nextWord.end,
-          words: []
+          words: [],
         };
       }
     }
@@ -91,55 +101,55 @@ const convertWordsToSegments = (words = [], fullText = '') => {
   return segments;
 };
 
-const REMOTE_MEDIA_DOC = 'https://www.assemblyai.com/docs/api-reference/upload';
+const REMOTE_MEDIA_DOC = "https://www.assemblyai.com/docs/api-reference/upload";
 
 const formatTimestamp = (seconds) => {
-  if (typeof seconds !== 'number' || Number.isNaN(seconds)) return '00:00:00';
+  if (typeof seconds !== "number" || Number.isNaN(seconds)) return "00:00:00";
   const totalSeconds = Math.max(0, Math.floor(seconds));
   const hours = Math.floor(totalSeconds / 3600)
     .toString()
-    .padStart(2, '0');
+    .padStart(2, "0");
   const minutes = Math.floor((totalSeconds % 3600) / 60)
     .toString()
-    .padStart(2, '0');
-  const secs = (totalSeconds % 60).toString().padStart(2, '0');
+    .padStart(2, "0");
+  const secs = (totalSeconds % 60).toString().padStart(2, "0");
   return `${hours}:${minutes}:${secs}`;
 };
 
 const toSeconds = (value) => {
-  if (typeof value !== 'number' || isNaN(value)) return 0;
+  if (typeof value !== "number" || isNaN(value)) return 0;
   // Smart detection: values >= 1000 are in milliseconds, < 1000 are already in seconds
   // This handles both new data (ms) and legacy data (seconds)
   return value >= 1000 ? value / 1000 : value;
 };
 
 const summariseText = (summary) => {
-  if (!summary) return '';
-  if (typeof summary === 'string') return summary;
+  if (!summary) return "";
+  if (typeof summary === "string") return summary;
 
   if (Array.isArray(summary)) {
     return summary
       .map((item) => {
-        if (typeof item === 'string') return item;
+        if (typeof item === "string") return item;
         if (item?.text) return item.text;
         if (item?.summary) return item.summary;
-        return '';
+        return "";
       })
       .filter(Boolean)
-      .join(' ');
+      .join(" ");
   }
 
-  if (typeof summary === 'object') {
+  if (typeof summary === "object") {
     if (Array.isArray(summary?.summaries)) {
       return summary.summaries
-        .map((entry) => entry?.text || entry?.summary || '')
+        .map((entry) => entry?.text || entry?.summary || "")
         .filter(Boolean)
-        .join(' ');
+        .join(" ");
     }
     if (summary?.text) return summary.text;
   }
 
-  return '';
+  return "";
 };
 
 const buildSrtFromSegments = (segments = []) =>
@@ -147,26 +157,26 @@ const buildSrtFromSegments = (segments = []) =>
     .map((segment, index) => {
       const start = formatTimestamp(toSeconds(segment.start ?? 0));
       const end = formatTimestamp(toSeconds(segment.end ?? segment.start ?? 0));
-      return `${index + 1}\n${start},000 --> ${end},000\n${segment.text?.trim() ?? ''}\n`;
+      return `${index + 1}\n${start},000 --> ${end},000\n${segment.text?.trim() ?? ""}\n`;
     })
-    .join('\n');
+    .join("\n");
 
 const buildVttFromSegments = (segments = []) => {
-  const header = 'WEBVTT\n';
+  const header = "WEBVTT\n";
   const body = segments
     .map((segment) => {
       const start = formatTimestamp(toSeconds(segment.start ?? 0));
       const end = formatTimestamp(toSeconds(segment.end ?? segment.start ?? 0));
-      return `${start}.000 --> ${end}.000\n${segment.text?.trim() ?? ''}\n`;
+      return `${start}.000 --> ${end}.000\n${segment.text?.trim() ?? ""}\n`;
     })
-    .join('\n');
+    .join("\n");
   return `${header}\n${body}`;
 };
 
 const MetaChip = ({ icon: Icon, label, value }) => (
   <div className="flex items-center gap-2 rounded-full bg-gray-800/60 px-3 py-1 text-xs text-gray-200">
     <Icon className="h-3.5 w-3.5 text-purple-300" />
-    <span className="font-medium text-white">{value || '—'} </span>
+    <span className="font-medium text-white">{value || "—"} </span>
     <span className="text-gray-400">{label}</span>
   </div>
 );
@@ -179,7 +189,9 @@ const InsightCard = ({ title, icon: Icon, children, description }) => (
           <Icon className="h-5 w-5 text-purple-300" />
           <span>{title}</span>
         </div>
-        {description ? <p className="mt-1 text-xs text-gray-400">{description}</p> : null}
+        {description ? (
+          <p className="mt-1 text-xs text-gray-400">{description}</p>
+        ) : null}
       </div>
     </div>
     <div className="mt-4">{children}</div>
@@ -191,20 +203,20 @@ const TranscriptEditorPage = () => {
   const [transcription, setTranscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subtitleDownload, setSubtitleDownload] = useState(null);
-  const [wordQuery, setWordQuery] = useState('');
+  const [wordQuery, setWordQuery] = useState("");
   const [wordResults, setWordResults] = useState(null);
   const [wordLoading, setWordLoading] = useState(false);
   const [lemurInputs, setLemurInputs] = useState({
-    summaryContext: '',
-    questions: '',
-    qaContext: '',
-    taskPrompt: '',
-    taskContext: ''
+    summaryContext: "",
+    questions: "",
+    qaContext: "",
+    taskPrompt: "",
+    taskContext: "",
   });
   const [lemurOutput, setLemurOutput] = useState({
     summary: null,
     qa: null,
-    task: null
+    task: null,
   });
   const [lemurLoading, setLemurLoading] = useState(null);
 
@@ -214,11 +226,11 @@ const TranscriptEditorPage = () => {
     const record = stored.find((entry) => entry.id === id);
     if (!record) {
       toast({
-        title: 'Transcription not found',
-        description: 'Record not available in local storage.',
-        variant: 'destructive'
+        title: "Transcription not found",
+        description: "Record not available in local storage.",
+        variant: "destructive",
       });
-      navigate('/transcriptions');
+      navigate("/transcriptions");
       return;
     }
     setTranscription(record);
@@ -239,12 +251,12 @@ const TranscriptEditorPage = () => {
     transcription?.text ??
     assembly.text ??
     transcription?.transcript_text ??
-    '';
+    "";
   let segments =
-  transcription?.segments ??
-  assembly.segments ??
-  assembly.transcript_json?.segments ??
-  [];
+    transcription?.segments ??
+    assembly.segments ??
+    assembly.transcript_json?.segments ??
+    [];
   const paragraphs = assembly.paragraphs ?? [];
   const highlights = assembly.auto_highlights_result?.results ?? [];
   const sentiment = assembly.sentiment_analysis_results ?? [];
@@ -256,8 +268,11 @@ const TranscriptEditorPage = () => {
   const subtitles = assembly.subtitles ?? {};
   const redactedAudio =
     assembly.redacted_audio ??
-    (assembly.redacted_audio_url ? { redacted_audio_url: assembly.redacted_audio_url } : null);
-  const featureSelections = transcription?.feature_selections ?? assembly.feature_selections ?? {};
+    (assembly.redacted_audio_url
+      ? { redacted_audio_url: assembly.redacted_audio_url }
+      : null);
+  const featureSelections =
+    transcription?.feature_selections ?? assembly.feature_selections ?? {};
   const requestOptions = assembly.request_options ?? {};
 
   // Build UI segments: prefer paragraphs, else segments, else derive from words or fallback to full text
@@ -270,12 +285,18 @@ const TranscriptEditorPage = () => {
         ? transcription.words
         : [];
     // convertWordsToSegments now keeps timestamps in milliseconds
-    return convertWordsToSegments(baseWords, transcriptText || '');
-  }, [paragraphs, segments, assembly.words, transcription?.words, transcriptText]);
+    return convertWordsToSegments(baseWords, transcriptText || "");
+  }, [
+    paragraphs,
+    segments,
+    assembly.words,
+    transcription?.words,
+    transcriptText,
+  ]);
 
   const summaryText = useMemo(
     () => summariseText(transcription?.summary ?? assembly.summary),
-    [assembly.summary, transcription?.summary]
+    [assembly.summary, transcription?.summary],
   );
 
   const metaInfo = useMemo(() => {
@@ -294,79 +315,85 @@ const TranscriptEditorPage = () => {
     const confidence =
       meta.confidence ??
       assembly.confidence ??
-      (Array.isArray(segments) && segments.length > 0 ? assembly.confidence : null);
+      (Array.isArray(segments) && segments.length > 0
+        ? assembly.confidence
+        : null);
 
     const languageCode =
       meta.language_code ||
       assembly.language_code ||
       transcription.language_code ||
-      '—';
+      "—";
 
     return [
       {
-        label: 'Duration',
-        value: durationInSeconds ? formatTimestamp(durationInSeconds) : '—',
-        icon: Clock3
+        label: "Duration",
+        value: durationInSeconds ? formatTimestamp(durationInSeconds) : "—",
+        icon: Clock3,
       },
       {
-        label: 'Language',
-        value: typeof languageCode === 'string' ? languageCode.toUpperCase() : '—',
-        icon: Languages
+        label: "Language",
+        value:
+          typeof languageCode === "string" ? languageCode.toUpperCase() : "—",
+        icon: Languages,
       },
       {
-        label: 'Confidence',
-        value: confidence ? `${(confidence * 100).toFixed(1)}%` : '—',
-        icon: GaugeCircle
+        label: "Confidence",
+        value: confidence ? `${(confidence * 100).toFixed(1)}%` : "—",
+        icon: GaugeCircle,
       },
       {
-        label: 'Status',
+        label: "Status",
         value: transcription.status,
-        icon: Bookmark
-      }
+        icon: Bookmark,
+      },
     ];
   }, [assembly, segments, transcription]);
   const handleCopyToClipboard = useCallback(() => {
     if (!transcriptText) return;
     navigator.clipboard
       .writeText(transcriptText)
-      .then(() => toast({ title: 'Copied to clipboard!' }))
+      .then(() => toast({ title: "Copied to clipboard!" }))
       .catch(() =>
         toast({
-          title: 'Copy failed',
-          description: 'Please check browser permissions to copy text.',
-          variant: 'destructive'
-        })
+          title: "Copy failed",
+          description: "Please check browser permissions to copy text.",
+          variant: "destructive",
+        }),
       );
   }, [transcriptText]);
 
   const downloadTXT = useCallback(() => {
-    const blob = new Blob([transcriptText || ''], { type: 'text/plain;charset=utf-8' });
-    saveAs(blob, `${transcription?.file_name || 'transcription'}.txt`);
+    const blob = new Blob([transcriptText || ""], {
+      type: "text/plain;charset=utf-8",
+    });
+    saveAs(blob, `${transcription?.file_name || "transcription"}.txt`);
   }, [transcription?.file_name, transcriptText]);
 
   const downloadPDF = useCallback(() => {
     const doc = new jsPDF();
-    doc.setFont('Helvetica');
+    doc.setFont("Helvetica");
     doc.setFontSize(16);
-    doc.text(transcription?.file_name || 'Transcription', 10, 20);
+    doc.text(transcription?.file_name || "Transcription", 10, 20);
     doc.setFontSize(11);
-    const splitText = doc.splitTextToSize(transcriptText || '', 180);
+    const splitText = doc.splitTextToSize(transcriptText || "", 180);
     doc.text(splitText, 10, 30);
-    doc.save(`${transcription?.file_name || 'transcription'}.pdf`);
+    doc.save(`${transcription?.file_name || "transcription"}.pdf`);
   }, [transcription?.file_name, transcriptText]);
 
   const downloadDOCX = useCallback(() => {
-    const paragraphNodes = uiSegments.map((segment) =>
-      new DocxParagraph({
-        children: [
-          new TextRun({
-            text: `[${formatTimestamp(toSeconds(segment.start))}] `,
-            bold: true
-          }),
-          new TextRun(segment.text ?? '')
-        ],
-        spacing: { after: 200 }
-      })
+    const paragraphNodes = uiSegments.map(
+      (segment) =>
+        new DocxParagraph({
+          children: [
+            new TextRun({
+              text: `[${formatTimestamp(toSeconds(segment.start))}] `,
+              bold: true,
+            }),
+            new TextRun(segment.text ?? ""),
+          ],
+          spacing: { after: 200 },
+        }),
     );
 
     const doc = new Document({
@@ -377,34 +404,36 @@ const TranscriptEditorPage = () => {
             new DocxParagraph({
               children: [
                 new TextRun({
-                  text: transcription?.file_name || 'Transcription',
+                  text: transcription?.file_name || "Transcription",
                   bold: true,
-                  size: 32
-                })
+                  size: 32,
+                }),
               ],
-              spacing: { after: 400 }
+              spacing: { after: 400 },
             }),
-            ...paragraphNodes
-          ]
-        }
-      ]
+            ...paragraphNodes,
+          ],
+        },
+      ],
     });
 
     Packer.toBlob(doc).then((blob) => {
-      saveAs(blob, `${transcription?.file_name || 'transcription'}.docx`);
+      saveAs(blob, `${transcription?.file_name || "transcription"}.docx`);
     });
   }, [uiSegments, transcription?.file_name]);
   const downloadSubtitle = useCallback(
     async (format) => {
       if (!transcription) return;
-      const filename = `${transcription.file_name || 'transcription'}.${format}`;
+      const filename = `${transcription.file_name || "transcription"}.${format}`;
 
       try {
         let content = subtitles[format];
 
         if (!content) {
           setSubtitleDownload(format);
-          const response = await fetch(`/api/transcripts/${transcription.id}/subtitles?format=${format}`);
+          const response = await fetch(
+            `/api/transcripts/${transcription.id}/subtitles?format=${format}`,
+          );
           if (!response.ok) {
             throw new Error(`Could not retrieve subtitle (${format}).`);
           }
@@ -415,72 +444,75 @@ const TranscriptEditorPage = () => {
               ...prev.assemblyai,
               subtitles: {
                 ...(prev.assemblyai?.subtitles ?? {}),
-                [format]: content
-              }
-            }
+                [format]: content,
+              },
+            },
           }));
         }
 
-        if (!content && format === 'srt') {
+        if (!content && format === "srt") {
           content = buildSrtFromSegments(uiSegments);
         }
-        if (!content && format === 'vtt') {
+        if (!content && format === "vtt") {
           content = buildVttFromSegments(uiSegments);
         }
 
         if (!content) {
-          throw new Error('Could not generate subtitle content.');
+          throw new Error("Could not generate subtitle content.");
         }
 
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
         saveAs(blob, filename);
       } catch (error) {
-        console.error('Subtitle download error:', error);
+        console.error("Subtitle download error:", error);
         toast({
-          title: 'Subtitle download failed',
+          title: "Subtitle download failed",
           description: error.message,
-          variant: 'destructive'
+          variant: "destructive",
         });
       } finally {
         setSubtitleDownload(null);
       }
     },
-    [persistTranscriptionUpdate, uiSegments, subtitles, transcription]
+    [persistTranscriptionUpdate, uiSegments, subtitles, transcription],
   );
 
   const handleWordSearch = useCallback(async () => {
     if (!transcription || !wordQuery.trim()) return;
     const terms = wordQuery
-      .split(',')
+      .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
     if (terms.length === 0) {
       toast({
-        title: 'Words required',
-        description: 'Enter the words you want to search, separated by commas.',
-        variant: 'destructive'
+        title: "Words required",
+        description: "Enter the words you want to search, separated by commas.",
+        variant: "destructive",
       });
       return;
     }
 
     try {
       setWordLoading(true);
-      const response = await fetch(`/api/transcripts/${transcription.id}/word-search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ words: terms })
-      });
+      const response = await fetch(
+        `/api/transcripts/${transcription.id}/word-search`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ words: terms }),
+        },
+      );
       const data = await response.json();
       if (!response.ok || data?.success === false) {
-        throw new Error(data.error || 'Word search failed.');
+        throw new Error(data.error || "Word search failed.");
       }
       setWordResults(data.data || data);
     } catch (error) {
-      console.error('Word search error:', error);
+      console.error("Word search error:", error);
       toast({
-        title: 'Word search failed',
+        title: "Word search failed",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setWordLoading(false);
@@ -493,10 +525,10 @@ const TranscriptEditorPage = () => {
         setLemurLoading(mode);
         const payload = {
           mode,
-          transcriptIds: [transcription.id]
+          transcriptIds: [transcription.id],
         };
 
-        if (mode === 'summary') {
+        if (mode === "summary") {
           if (lemurInputs.summaryContext) {
             payload.context = lemurInputs.summaryContext;
           }
@@ -506,21 +538,21 @@ const TranscriptEditorPage = () => {
           if (requestOptions.summary_model) {
             payload.summary_model = requestOptions.summary_model;
           }
-        } else if (mode === 'qa') {
+        } else if (mode === "qa") {
           const questions = lemurInputs.questions
-            .split('\n')
+            .split("\n")
             .map((item) => item.trim())
             .filter(Boolean);
           if (!questions.length) {
-            throw new Error('Enter at least one question.');
+            throw new Error("Enter at least one question.");
           }
           payload.questions = questions;
           if (lemurInputs.qaContext) {
             payload.context = lemurInputs.qaContext;
           }
-        } else if (mode === 'task') {
+        } else if (mode === "task") {
           if (!lemurInputs.taskPrompt.trim()) {
-            throw new Error('Enter a prompt for the custom task.');
+            throw new Error("Enter a prompt for the custom task.");
           }
           payload.prompt = lemurInputs.taskPrompt;
           if (lemurInputs.taskContext.trim()) {
@@ -528,38 +560,38 @@ const TranscriptEditorPage = () => {
           }
         }
 
-        const response = await fetch('/api/lemur', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        const response = await fetch("/api/lemur", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
         const data = await response.json();
         if (!response.ok || data?.success === false) {
-          throw new Error(data.error || 'LeMUR request failed.');
+          throw new Error(data.error || "LeMUR request failed.");
         }
 
         const result = data.data || data;
         setLemurOutput((prev) => ({
           ...prev,
-          [mode === 'task' ? 'task' : mode]: result
+          [mode === "task" ? "task" : mode]: result,
         }));
 
         toast({
-          title: 'LeMUR result ready',
-          description: 'Your AssemblyAI LeMUR request has been completed.'
+          title: "LeMUR result ready",
+          description: "Your AssemblyAI LeMUR request has been completed.",
         });
       } catch (error) {
-        console.error('LeMUR error:', error);
+        console.error("LeMUR error:", error);
         toast({
-          title: 'LeMUR request failed',
+          title: "LeMUR request failed",
           description: error.message,
-          variant: 'destructive'
+          variant: "destructive",
         });
       } finally {
         setLemurLoading(null);
       }
     },
-    [lemurInputs, requestOptions, transcription]
+    [lemurInputs, requestOptions, transcription],
   );
 
   if (loading) {
@@ -579,10 +611,12 @@ const TranscriptEditorPage = () => {
   return (
     <>
       <Helmet>
-        <title>Transcription - {transcription.file_name || 'Transcription'}</title>
+        <title>
+          Transcription - {transcription.file_name || "Transcription"}
+        </title>
         <meta
           name="description"
-          content={`Transcription and AI insights for ${transcription.file_name || 'a file'} processed with AssemblyAI`}
+          content={`Transcription and AI insights for ${transcription.file_name || "a file"} processed with AI`}
         />
       </Helmet>
 
@@ -596,10 +630,11 @@ const TranscriptEditorPage = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold gradient-text truncate">
-                {transcription.file_name || 'Transcription'}
+                {transcription.file_name || "Transcription"}
               </h1>
               <p className="text-sm text-gray-400">
-                Full transcript, summary, and insights for your file analyzed with AssemblyAI.
+                Full transcript, summary, and insights for your file analyzed
+                with AI.
               </p>
               <div className="flex flex-wrap gap-2 pt-2">
                 {metaInfo.map((item) => (
@@ -616,8 +651,8 @@ const TranscriptEditorPage = () => {
                 variant="outline"
                 onClick={() =>
                   toast({
-                    title: 'Sharing coming soon',
-                    description: 'We are working on this feature.'
+                    title: "Sharing coming soon",
+                    description: "We are working on this feature.",
                   })
                 }
               >
@@ -632,23 +667,35 @@ const TranscriptEditorPage = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="glass-effect">
-                  <DropdownMenuItem onClick={downloadTXT}>.txt</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => downloadSubtitle('srt')}>
-                    {subtitleDownload === 'srt' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  <DropdownMenuItem onClick={downloadTXT}>
+                    .txt
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => downloadSubtitle("srt")}>
+                    {subtitleDownload === "srt" ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
                     .srt
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => downloadSubtitle('vtt')}>
-                    {subtitleDownload === 'vtt' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  <DropdownMenuItem onClick={() => downloadSubtitle("vtt")}>
+                    {subtitleDownload === "vtt" ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
                     .vtt
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={downloadPDF}>.pdf</DropdownMenuItem>
-                  <DropdownMenuItem onClick={downloadDOCX}>.docx</DropdownMenuItem>
+                  <DropdownMenuItem onClick={downloadPDF}>
+                    .pdf
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={downloadDOCX}>
+                    .docx
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               {redactedAudio?.redacted_audio_url ? (
                 <Button
                   variant="outline"
-                  onClick={() => window.open(redactedAudio.redacted_audio_url, '_blank')}
+                  onClick={() =>
+                    window.open(redactedAudio.redacted_audio_url, "_blank")
+                  }
                 >
                   <DownloadCloud className="w-4 h-4 mr-2" />
                   Redacted Audio
@@ -661,9 +708,12 @@ const TranscriptEditorPage = () => {
               <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-6 backdrop-blur">
                 <div className="flex items-center justify-between gap-4 mb-6">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">Transcript</h2>
+                    <h2 className="text-lg font-semibold text-white">
+                      Transcript
+                    </h2>
                     <p className="text-xs text-gray-400">
-                      Jump to specific moments in the conversation using timestamps.
+                      Jump to specific moments in the conversation using
+                      timestamps.
                     </p>
                   </div>
                 </div>
@@ -682,21 +732,24 @@ const TranscriptEditorPage = () => {
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-3 text-sm text-gray-200 leading-relaxed">{segment.text}</p>
+                      <p className="mt-3 text-sm text-gray-200 leading-relaxed">
+                        {segment.text}
+                      </p>
                     </div>
                   ))}
-                  {uiSegments.length === 0 && (
-                    transcriptText ? (
+                  {uiSegments.length === 0 &&
+                    (transcriptText ? (
                       <div className="rounded-xl border border-white/5 bg-gray-900/60 p-6">
-                        <p className="whitespace-pre-wrap text-gray-200 text-sm leading-relaxed">{transcriptText}</p>
+                        <p className="whitespace-pre-wrap text-gray-200 text-sm leading-relaxed">
+                          {transcriptText}
+                        </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-gray-900/40 py-12 text-gray-400">
                         <FileText className="h-10 w-10" />
                         <p>No text found.</p>
                       </div>
-                    )
-                  )}
+                    ))}
                 </div>
               </div>
 
@@ -707,16 +760,20 @@ const TranscriptEditorPage = () => {
                       <Search className="h-5 w-5 text-sky-300" />
                       Word Search
                     </h3>
-                    <p className="text-xs text-gray-400">Search for keywords separated by commas.</p>
+                    <p className="text-xs text-gray-400">
+                      Search for keywords separated by commas.
+                    </p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
-                      placeholder="e.g. AssemblyAI, artificial intelligence"
+                      placeholder="e.g. AI, artificial intelligence"
                       value={wordQuery}
                       onChange={(event) => setWordQuery(event.target.value)}
                     />
                     <Button onClick={handleWordSearch} disabled={wordLoading}>
-                      {wordLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      {wordLoading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
                       Search
                     </Button>
                   </div>
@@ -729,13 +786,20 @@ const TranscriptEditorPage = () => {
                         className="rounded-xl border border-white/5 bg-gray-900/60 px-4 py-3 text-sm text-gray-200"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold text-white">{match.text}</span>
-                          <span className="text-xs text-purple-300 font-medium">{match.count} matches</span>
+                          <span className="font-semibold text-white">
+                            {match.text}
+                          </span>
+                          <span className="text-xs text-purple-300 font-medium">
+                            {match.count} matches
+                          </span>
                         </div>
                         {match.timestamps?.length ? (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {match.timestamps.slice(0, 5).map(([start]) => (
-                              <span key={start} className="rounded-full bg-gray-800/60 px-2 py-1 text-xs text-gray-300">
+                              <span
+                                key={start}
+                                className="rounded-full bg-gray-800/60 px-2 py-1 text-xs text-gray-300"
+                              >
                                 {formatTimestamp(start / 1000)}
                               </span>
                             ))}
@@ -751,7 +815,8 @@ const TranscriptEditorPage = () => {
                   </div>
                 ) : (
                   <p className="mt-4 text-sm text-gray-400">
-                    No search performed yet. Please enter the words you want to search in the field above.
+                    No search performed yet. Please enter the words you want to
+                    search in the field above.
                   </p>
                 )}
               </div>
@@ -761,17 +826,24 @@ const TranscriptEditorPage = () => {
               <InsightCard
                 title="Summary & Highlights"
                 icon={Sparkles}
-                description="Quick summary and key phrases generated by AssemblyAI."
+                description="Quick summary and key phrases generated."
               >
                 {summaryText ? (
-                  <p className="text-sm text-gray-300 leading-relaxed">{summaryText}</p>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    {summaryText}
+                  </p>
                 ) : (
-                  <p className="text-sm text-gray-500">Summary model is not enabled or no data found.</p>
+                  <p className="text-sm text-gray-500">
+                    Summary model is not enabled or no data found.
+                  </p>
                 )}
                 {highlights.length > 0 ? (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {highlights.slice(0, 15).map((item) => (
-                      <span key={`${item.text}-${item.rank}`} className="rounded-full bg-purple-500/15 px-3 py-1 text-xs text-purple-200">
+                      <span
+                        key={`${item.text}-${item.rank}`}
+                        className="rounded-full bg-purple-500/15 px-3 py-1 text-xs text-purple-200"
+                      >
                         {item.text}
                       </span>
                     ))}
@@ -781,8 +853,11 @@ const TranscriptEditorPage = () => {
                   {Object.entries(featureSelections)
                     .filter(([, enabled]) => enabled)
                     .map(([feature]) => (
-                      <span key={feature} className="rounded-full bg-gray-800/60 px-2.5 py-1 text-2xs uppercase tracking-wide text-gray-400">
-                        {feature.replace(/_/g, ' ')}
+                      <span
+                        key={feature}
+                        className="rounded-full bg-gray-800/60 px-2.5 py-1 text-2xs uppercase tracking-wide text-gray-400"
+                      >
+                        {feature.replace(/_/g, " ")}
                       </span>
                     ))}
                 </div>
@@ -803,11 +878,11 @@ const TranscriptEditorPage = () => {
                           <span className="pr-4">{item.text}</span>
                           <span
                             className={`text-xs font-semibold ${
-                              item.sentiment === 'POSITIVE'
-                                ? 'text-green-300'
-                                : item.sentiment === 'NEGATIVE'
-                                ? 'text-red-300'
-                                : 'text-yellow-200'
+                              item.sentiment === "POSITIVE"
+                                ? "text-green-300"
+                                : item.sentiment === "NEGATIVE"
+                                  ? "text-red-300"
+                                  : "text-yellow-200"
                             }`}
                           >
                             {item.sentiment}
@@ -832,7 +907,9 @@ const TranscriptEditorPage = () => {
                         className="flex items-center justify-between rounded-lg border border-white/5 bg-gray-900/50 px-3 py-2 text-sm text-gray-200"
                       >
                         <span>{entity.text}</span>
-                        <span className="text-xs text-purple-300 font-semibold">{entity.entity_type}</span>
+                        <span className="text-xs text-purple-300 font-semibold">
+                          {entity.entity_type}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -848,7 +925,9 @@ const TranscriptEditorPage = () => {
                   <div className="space-y-4">
                     {contentSafety.length > 0 && (
                       <div>
-                        <p className="text-xs text-gray-400 mb-2">Safety Labels</p>
+                        <p className="text-xs text-gray-400 mb-2">
+                          Safety Labels
+                        </p>
                         <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                           {contentSafety.map((item, idx) => (
                             <div
@@ -856,7 +935,9 @@ const TranscriptEditorPage = () => {
                               className="flex items-center justify-between rounded-lg border border-white/5 bg-gray-900/50 px-3 py-2 text-sm text-gray-200"
                             >
                               <span>{item.label}</span>
-                              <span className="text-xs text-red-300 font-semibold">{(item.confidence * 100).toFixed(1)}%</span>
+                              <span className="text-xs text-red-300 font-semibold">
+                                {(item.confidence * 100).toFixed(1)}%
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -872,7 +953,9 @@ const TranscriptEditorPage = () => {
                               className="flex items-center justify-between rounded-lg border border-white/5 bg-gray-900/50 px-3 py-2 text-sm text-gray-200"
                             >
                               <span>{item.label}</span>
-                              <span className="text-xs text-sky-300 font-semibold">{(item.score * 100).toFixed(1)}%</span>
+                              <span className="text-xs text-sky-300 font-semibold">
+                                {(item.score * 100).toFixed(1)}%
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -897,121 +980,22 @@ const TranscriptEditorPage = () => {
                         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 font-medium">
                           <span className="flex items-center gap-1 text-purple-300">
                             <ArrowRightCircle className="h-3.5 w-3.5" />
-                            {formatTimestamp(toSeconds(chapter.start ?? 0))} - {formatTimestamp(toSeconds(chapter.end ?? 0))}
+                            {formatTimestamp(
+                              toSeconds(chapter.start ?? 0),
+                            )} - {formatTimestamp(toSeconds(chapter.end ?? 0))}
                           </span>
-                          {chapter.headline ? <span>• {chapter.headline}</span> : null}
+                          {chapter.headline ? (
+                            <span>• {chapter.headline}</span>
+                          ) : null}
                         </div>
-                        <p className="mt-2 leading-relaxed">{chapter.summary}</p>
+                        <p className="mt-2 leading-relaxed">
+                          {chapter.summary}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </InsightCard>
               )}
-
-              <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-6 backdrop-blur">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-3">
-                  <Sparkles className="h-5 w-5 text-purple-300" />
-                  AssemblyAI LeMUR Assistant
-                </h3>
-                <p className="text-xs text-gray-400 mb-4">
-                  Use LeMUR to summarize the transcript, get answers to questions, or generate custom tasks.
-                </p>
-                <Tabs defaultValue="summary" className="w-full">
-                  <TabsList className="glass-effect p-1 grid grid-cols-3 mb-4">
-                    <TabsTrigger value="summary">Summary</TabsTrigger>
-                    <TabsTrigger value="qa">Q&A</TabsTrigger>
-                    <TabsTrigger value="task">Custom Task</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="summary" className="space-y-3">
-                    <textarea
-                      className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px]"
-                      placeholder="e.g. 'Highlight technical decisions and generate action items.'"
-                      value={lemurInputs.summaryContext}
-                      onChange={(event) => setLemurInputs((prev) => ({ ...prev, summaryContext: event.target.value }))}
-                    />
-                    <Button onClick={() => runLemur('summary')} disabled={lemurLoading === 'summary'}>
-                      {lemurLoading === 'summary' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Generate Summary
-                    </Button>
-                    {lemurOutput.summary ? (
-                      <div className="rounded-xl border border-white/10 bg-gray-900/50 p-4 text-sm text-gray-300">
-                        {lemurOutput.summary.summaries ? (
-                          <ul className="list-disc list-inside space-y-1">
-                            {lemurOutput.summary.summaries.map((entry, idx) => (
-                              <li key={idx}>{entry.text || entry.summary}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <pre className="whitespace-pre-wrap text-xs text-gray-300">
-                            {JSON.stringify(lemurOutput.summary, null, 2)}
-                          </pre>
-                        )}
-                      </div>
-                    ) : null}
-                  </TabsContent>
-                  <TabsContent value="qa" className="space-y-3">
-                    <textarea
-                      className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
-                      placeholder={'e.g.\n• Toplantının ana kararları nelerdi?\n• Finans departmanı için aksiyon maddeleri nelerdir?'}
-                      value={lemurInputs.questions}
-                      onChange={(event) => setLemurInputs((prev) => ({ ...prev, questions: event.target.value }))}
-                    />
-                    <Input
-                      placeholder="Additional context (optional)"
-                      value={lemurInputs.qaContext}
-                      onChange={(event) => setLemurInputs((prev) => ({ ...prev, qaContext: event.target.value }))}
-                    />
-                    <Button onClick={() => runLemur('qa')} disabled={lemurLoading === 'qa'}>
-                      {lemurLoading === 'qa' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Answer Questions
-                    </Button>
-                    {lemurOutput.qa ? (
-                      <div className="rounded-xl border border-white/10 bg-gray-900/50 p-4 text-sm text-gray-300 space-y-3">
-                        {Array.isArray(lemurOutput.qa.answers) ? (
-                          lemurOutput.qa.answers.map((answer, idx) => (
-                            <div key={idx} className="space-y-1">
-                              <p className="font-semibold text-white">{answer.question}</p>
-                              <p>{answer.answer}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <pre className="whitespace-pre-wrap text-xs text-gray-300">
-                            {JSON.stringify(lemurOutput.qa, null, 2)}
-                          </pre>
-                        )}
-                      </div>
-                    ) : null}
-                  </TabsContent>
-                  <TabsContent value="task" className="space-y-3">
-                    <textarea
-                      className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[140px]"
-                      placeholder="e.g. 'Convert the transcript into a 3-point action plan.'"
-                      value={lemurInputs.taskPrompt}
-                      onChange={(event) => setLemurInputs((prev) => ({ ...prev, taskPrompt: event.target.value }))}
-                    />
-                    <Input
-                      placeholder="Additional context (optional)"
-                      value={lemurInputs.taskContext}
-                      onChange={(event) => setLemurInputs((prev) => ({ ...prev, taskContext: event.target.value }))}
-                    />
-                    <Button onClick={() => runLemur('task')} disabled={lemurLoading === 'task'}>
-                      {lemurLoading === 'task' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Run Task
-                    </Button>
-                    {lemurOutput.task ? (
-                      <div className="rounded-xl border border-white/10 bg-gray-900/50 p-4 text-sm text-gray-300">
-                        {lemurOutput.task.response_text ? (
-                          <pre className="whitespace-pre-wrap">{lemurOutput.task.response_text}</pre>
-                        ) : (
-                          <pre className="whitespace-pre-wrap text-xs text-gray-300">
-                            {JSON.stringify(lemurOutput.task, null, 2)}
-                          </pre>
-                        )}
-                      </div>
-                    ) : null}
-                  </TabsContent>
-                </Tabs>
-              </div>
             </div>
           </div>
         </motion.div>
