@@ -36,6 +36,15 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-14**: Vite Build Configuration Fix
+  - **Problem**: Deployment failing with "Could not resolve entry module index.html" error
+  - **Root Cause**: Missing index.html in root directory and missing build.rollupOptions.input configuration
+  - **Solution**: 
+    - Recreated index.html in project root with proper React app structure
+    - Updated vite.config.js with explicit `root: '.'` and `build.rollupOptions.input` configuration
+    - Set `outDir: 'dist'` to match server static file serving path
+  - **Result**: Build succeeds, generates proper dist output for production
+
 - **2025-10-14**: Production Deployment Fix - Proxy Configuration & Single Server Architecture
   - **Problem Solved**: Fixed production deployment issue where frontend couldn't reach backend API (ECONNREFUSED error)
   - **Root Cause**: Vite proxy only works in development mode, not in production builds
