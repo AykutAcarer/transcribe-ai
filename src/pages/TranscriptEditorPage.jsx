@@ -106,9 +106,11 @@ const formatTimestamp = (seconds) => {
   return `${hours}:${minutes}:${secs}`;
 };
 
-const msToSeconds = (value) => {
-  if (typeof value !== 'number') return null;
-  return value / 1000;
+const toSeconds = (value) => {
+  if (typeof value !== 'number' || isNaN(value)) return 0;
+  // If value is large (>100), assume it's in milliseconds and convert
+  // Otherwise it's already in seconds
+  return value > 100 ? value / 1000 : value;
 };
 
 const summariseText = (summary) => {
@@ -299,22 +301,22 @@ const TranscriptEditorPage = () => {
 
     return [
       {
-        label: 'Süre',
-        value: durationInSeconds ? formatTimestamp(Math.floor(durationInSeconds)) : '—',
+        label: 'Duration',
+        value: durationInSeconds ? formatTimestamp(toSeconds(durationInSeconds)) : '—',
         icon: Clock3
       },
       {
-        label: 'Dil',
+        label: 'Language',
         value: typeof languageCode === 'string' ? languageCode.toUpperCase() : '—',
         icon: Languages
       },
       {
-        label: 'Güven',
+        label: 'Confidence',
         value: confidence ? `${(confidence * 100).toFixed(1)}%` : '—',
         icon: GaugeCircle
       },
       {
-        label: 'Durum',
+        label: 'Status',
         value: transcription.status,
         icon: Bookmark
       }
@@ -355,7 +357,7 @@ const TranscriptEditorPage = () => {
       new DocxParagraph({
         children: [
           new TextRun({
-            text: `[${formatTimestamp(msToSeconds(segment.start) ?? segment.start ?? 0)}] `,
+            text: `[${formatTimestamp(toSeconds(segment.start))}] `,
             bold: true
           }),
           new TextRun(segment.text ?? '')
@@ -669,7 +671,7 @@ const TranscriptEditorPage = () => {
                       className="rounded-xl border border-white/5 bg-gray-900/60 p-4 hover:border-purple-500/40 transition-colors"
                     >
                       <div className="flex items-center justify-between text-xs text-purple-300 font-semibold">
-                        <span>{formatTimestamp(msToSeconds(segment.start) ?? segment.start ?? 0)}</span>
+                        <span>{formatTimestamp(toSeconds(segment.start))}</span>
                         {segment.speaker ? (
                           <span className="flex items-center gap-1 text-gray-400">
                             <Users className="h-3.5 w-3.5" />
