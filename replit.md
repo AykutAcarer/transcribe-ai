@@ -36,6 +36,20 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-14**: TranscriptEditorPage Improvements & Timestamp System Overhaul
+  - **Timestamp System**: Implemented robust timestamp handling to fix display issues
+    - All timestamps now stored in milliseconds (AssemblyAI native format)
+    - Single `toSeconds()` conversion function for consistent display formatting
+    - Fixed duration calculation to handle mixed units (audio_duration in seconds, segments in milliseconds)
+    - Corrected all export formats (DOCX, SRT, VTT) to display accurate timestamps
+  - **English UI Conversion**: Converted all Turkish text to English throughout TranscriptEditorPage
+    - Updated all UI labels, buttons, placeholders, and descriptions
+    - Translated feature sections (sentiment analysis, entity recognition, content safety, etc.)
+  - **Conditional Rendering**: Implemented smart feature display
+    - Sentiment analysis, entity recognition, content safety, IAB categories, and chapters only appear when data exists
+    - LeMUR assistant always available for transcript processing
+  - **Known Limitation**: Legacy stored segments that were previously normalized to seconds may display incorrectly until data migration is implemented
+
 - **2025-10-14**: GitHub Import & Replit Environment Setup
   - Successfully imported GitHub repository into Replit environment
   - Fixed React JSX warnings by converting `class` to `className` in LandingPage component
