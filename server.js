@@ -5,7 +5,8 @@ import 'dotenv/config';
 import { AssemblyAI } from 'assemblyai';
 
 const app = express();
-const PORT = Number(process.env.PORT || 3001);
+// In production use 5000, in development use 3001
+const PORT = Number(process.env.PORT || (process.env.NODE_ENV === 'production' ? 5000 : 3001));
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
 
 const assemblyai = new AssemblyAI({
@@ -990,5 +991,20 @@ app.post('/api/assemblyai/transcribe', async (req, res) => {
     console.error('Unified upload error:', error);
     return res.status(500).json({ error: error.message || 'Upload/transcription failed.' });
   }
+});
+
+// Serve static files from dist directory in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('dist'));
+  
+  // Handle React Router - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    res.sendFile('index.html', { root: 'dist' });
+  });
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

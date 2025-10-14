@@ -36,6 +36,26 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-14**: Production Deployment Fix - Proxy Configuration & Single Server Architecture
+  - **Problem Solved**: Fixed production deployment issue where frontend couldn't reach backend API (ECONNREFUSED error)
+  - **Root Cause**: Vite proxy only works in development mode, not in production builds
+  - **Solution Implemented**: 
+    - Configured server.js to serve both API endpoints AND static frontend files in production
+    - Backend now runs on port 5000 in production (same as frontend), eliminating proxy need
+    - Updated deployment config to use Autoscale deployment with single unified server
+    - Development mode unchanged: still uses Vite dev (port 5000) + Express backend (port 3001) with proxy
+  - **Smart PORT Detection**: Server automatically uses correct port based on environment:
+    - Development: PORT 3001 (backend only, Vite proxy handles routing)
+    - Production: PORT 5000 (serves both API and static files)
+
+- **2025-10-14**: Timestamp Display Fix - Smart Detection System
+  - **Problem**: Timestamps showing "00:00:00" for legacy data
+  - **Root Cause**: Legacy data stored in seconds (0.4, 10.48), new data in milliseconds (400, 10480)
+  - **Solution**: Implemented smart detection in `toSeconds()` function:
+    - Values >= 1000 → treated as milliseconds, divided by 1000
+    - Values < 1000 → treated as seconds, used as-is
+  - **Result**: Both legacy and new data display correctly without migration
+
 - **2025-10-14**: TranscriptEditorPage Improvements & Timestamp System Overhaul
   - **Timestamp System**: Implemented robust timestamp handling to fix display issues
     - All timestamps now stored in milliseconds (AssemblyAI native format)
@@ -48,7 +68,6 @@ src/
   - **Conditional Rendering**: Implemented smart feature display
     - Sentiment analysis, entity recognition, content safety, IAB categories, and chapters only appear when data exists
     - LeMUR assistant always available for transcript processing
-  - **Known Limitation**: Legacy stored segments that were previously normalized to seconds may display incorrectly until data migration is implemented
 
 - **2025-10-14**: GitHub Import & Replit Environment Setup
   - Successfully imported GitHub repository into Replit environment
@@ -95,11 +114,15 @@ npm run preview
 Serves the production build locally for testing.
 
 ## Deployment
-The project is configured for Replit VM deployment:
-- **Build Command**: `npm run build`
-- **Run Command**: `node server.js & npm run preview` (runs both backend and frontend)
-- **Deployment Type**: VM (required for stateful backend server)
-- **Ports**: Backend on 3001 (localhost), Frontend on 5000 (public)
+The project is configured for Replit Autoscale deployment with unified server architecture:
+- **Build Command**: `npm run build` (creates static files in `dist/` directory)
+- **Run Command**: `NODE_ENV=production PORT=5000 node server.js`
+- **Deployment Type**: Autoscale (automatically scales based on traffic)
+- **Architecture**: Single Express server serves both API endpoints (`/api/*`) and static frontend files
+- **Port**: 5000 (both API and frontend on same port, no proxy needed)
+- **Environment Variables**: 
+  - `NODE_ENV=production` triggers static file serving from `dist/` directory
+  - `PORT=5000` ensures server listens on correct port for public access
 
 ## External Services & Configuration
 
