@@ -1,8 +1,13 @@
 import express from 'express';
 import formidable from 'formidable';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import 'dotenv/config';
 import { AssemblyAI } from 'assemblyai';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 // In production use 5000, in development use 3001
@@ -995,11 +1000,12 @@ app.post('/api/assemblyai/transcribe', async (req, res) => {
 
 // Serve static files from dist directory in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('dist'));
+  const distPath = path.join(__dirname, 'dist');
+  app.use(express.static(distPath));
   
   // Handle React Router - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile('index.html', { root: 'dist' });
+  app.use((req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 

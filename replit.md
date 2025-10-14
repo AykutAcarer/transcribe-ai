@@ -44,6 +44,8 @@ src/
     - Backend now runs on port 5000 in production (same as frontend), eliminating proxy need
     - Updated deployment config to use Autoscale deployment with single unified server
     - Development mode unchanged: still uses Vite dev (port 5000) + Express backend (port 3001) with proxy
+    - Fixed Express v5 compatibility issue with catch-all routes (changed from `app.get('*')` to `app.use()`)
+    - Added absolute path resolution using ES module `__dirname` equivalent for static file serving
   - **Smart PORT Detection**: Server automatically uses correct port based on environment:
     - Development: PORT 3001 (backend only, Vite proxy handles routing)
     - Production: PORT 5000 (serves both API and static files)
