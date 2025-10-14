@@ -45,19 +45,19 @@ const LandingPage = () => {
       icon: <UploadCloud className="w-10 h-10 text-purple-400" />,
       title: t('how_it_works_step1_title'),
       description: t('how_it_works_step1_desc'),
-      image: <img class="rounded-lg shadow-xl" alt="An illustration of a user uploading an audio file to the cloud." src="https://images.unsplash.com/photo-1693495928043-0506d65d8a56" />
+      image: <img className="rounded-lg shadow-xl" alt="An illustration of a user uploading an audio file to the cloud." src="https://images.unsplash.com/photo-1693495928043-0506d65d8a56" />
     },
     {
       icon: <Cpu className="w-10 h-10 text-pink-400" />,
       title: t('how_it_works_step2_title'),
       description: t('how_it_works_step2_desc'),
-      image: <img class="rounded-lg shadow-xl" alt="An animation showing AI brain processing information." src="https://images.unsplash.com/photo-1696333991019-c06759af30a6" />
+      image: <img className="rounded-lg shadow-xl" alt="An animation showing AI brain processing information." src="https://images.unsplash.com/photo-1696333991019-c06759af30a6" />
     },
     {
       icon: <Edit3 className="w-10 h-10 text-blue-400" />,
       title: t('how_it_works_step3_title'),
       description: t('how_it_works_step3_desc'),
-      image: <img class="rounded-lg shadow-xl" alt="A user editing and exporting a transcribed text document." src="https://images.unsplash.com/photo-1553342302-da68ffb063cb" />
+      image: <img className="rounded-lg shadow-xl" alt="A user editing and exporting a transcribed text document." src="https://images.unsplash.com/photo-1553342302-da68ffb063cb" />
     }
   ];
 
@@ -231,7 +231,7 @@ const LandingPage = () => {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                 >
-                  <img src="https://images.unsplash.com/photo-1675320458457-fe4576cbd0f8" class="rounded-2xl shadow-2xl w-full h-auto max-w-sm mx-auto" alt="Modern workspace with a laptop showing data charts" />
+                  <img src="https://images.unsplash.com/photo-1675320458457-fe4576cbd0f8" className="rounded-2xl shadow-2xl w-full h-auto max-w-sm mx-auto" alt="Modern workspace with a laptop showing data charts" />
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, x: 50 }}

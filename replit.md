@@ -36,6 +36,14 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-14**: GitHub Import & Replit Environment Setup
+  - Successfully imported GitHub repository into Replit environment
+  - Fixed React JSX warnings by converting `class` to `className` in LandingPage component
+  - Configured workflow to run both backend (port 3001) and frontend (port 5000) servers
+  - Set up VM deployment with build and run commands for production
+  - Verified backend API is running and responding correctly
+  - Updated .gitignore to include environment files
+  
 - **2025-10-11**: Data Structure Migration & Frontend Updates
   - Migrated all frontend components to use new data structure (text, segments, duration, language)
   - Updated TranscriptEditorPage to read from new fields with legacy fallback support
@@ -43,28 +51,22 @@ src/
   - Ensured backward compatibility with existing transcriptions
   - Verified complete data flow: upload → API → storage → display → export
   
-- **2025-10-11**: OpenAI Whisper Integration Completed
-  - Integrated OpenAI Whisper API for audio/video transcription
+- **2025-10-11**: AssemblyAI & Backend Integration
+  - Integrated AssemblyAI API for audio/video transcription
   - Created Express backend server (port 3001) for handling transcription requests
   - Updated FileUpload component to use local API endpoint
   - Increased upload limit to 500MB and removed the 5-minute duration cap
   - Configured API proxy in Vite for seamless frontend-backend communication
   - Fixed translation context issues by adding sidebar translations
-  
-- **2025-10-11**: Initial Replit setup completed
-  - Configured Vite dev server to run on port 5000 with 0.0.0.0 host
-  - Fixed vite binary permissions issue
-  - Set up Frontend and Backend workflows for development
-  - Configured deployment for autoscale with build and preview commands
-  - Added .gitignore for Node.js/React/Replit environment
 
 ## Development
 
 ### Running the Project
-The project uses a configured workflow that automatically starts the development server:
-- Server runs on `http://0.0.0.0:5000`
-- Hot module replacement (HMR) enabled
-- Vite dev server with CORS and allowed hosts configured
+The project uses a configured workflow that automatically starts both backend and frontend servers:
+- **Frontend**: Vite dev server on `http://0.0.0.0:5000` with HMR enabled
+- **Backend**: Express API server on `http://localhost:3001`
+- **Proxy**: Vite proxies `/api` requests to the backend server
+- **Host Configuration**: `allowedHosts: true` configured for Replit environment
 
 ### Building for Production
 ```bash
@@ -79,19 +81,26 @@ npm run preview
 Serves the production build locally for testing.
 
 ## Deployment
-The project is configured for Replit Autoscale deployment:
+The project is configured for Replit VM deployment:
 - **Build Command**: `npm run build`
-- **Run Command**: `npm run preview`
-- **Deployment Type**: Autoscale (suitable for static sites)
+- **Run Command**: `node server.js & npm run preview` (runs both backend and frontend)
+- **Deployment Type**: VM (required for stateful backend server)
+- **Ports**: Backend on 3001 (localhost), Frontend on 5000 (public)
 
-## External Services
-- **Supabase URL**: `https://clrjcjuotgwrssjcwzxj.supabase.co`
-- **Transcription API**: Supabase Functions endpoint at `/functions/v1/transcribe`
+## External Services & Configuration
+
+### API Keys Required
+- **ASSEMBLYAI_API_KEY**: Required for transcription service. Set this as a Replit secret.
+
+### Supabase (Optional)
+- **URL**: `https://clrjcjuotgwrssjcwzxj.supabase.co`
+- **Anon Key**: Currently hardcoded in `src/lib/customSupabaseClient.js`
+- Note: Supabase integration is optional and used for authentication features
 
 ## Known Issues & Notes
-- Minor React warnings about DOM properties (using `class` instead of `className` in some components)
-- React Router future flag warnings (can be addressed in future updates)
-- The application uses visual editor plugins for development (Replit-specific features)
+- React Router future flag warnings for v7 migration (can be addressed in future updates)
+- The application uses Replit visual editor plugins for development
+- AssemblyAI API key must be configured as a Replit secret for transcription to work
 
 ## User Preferences
 - No specific user preferences documented yet
