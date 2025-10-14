@@ -72,8 +72,8 @@ const convertWordsToSegments = (words = [], fullText = '') => {
     if (hasLongPause || hasPunctuation || isLastWord) {
       segments.push({
         text: currentSegment.words.join(' '),
-        start: currentSegment.start / 1000, // ms to seconds
-        end: currentSegment.end / 1000,
+        start: currentSegment.start, // Keep in milliseconds
+        end: currentSegment.end,
         confidence: word.confidence || 0.9
       });
       
@@ -108,9 +108,8 @@ const formatTimestamp = (seconds) => {
 
 const toSeconds = (value) => {
   if (typeof value !== 'number' || isNaN(value)) return 0;
-  // If value is large (>100), assume it's in milliseconds and convert
-  // Otherwise it's already in seconds
-  return value > 100 ? value / 1000 : value;
+  // AssemblyAI always returns timestamps in milliseconds, convert to seconds
+  return value / 1000;
 };
 
 const summariseText = (summary) => {
@@ -145,8 +144,8 @@ const summariseText = (summary) => {
 const buildSrtFromSegments = (segments = []) =>
   segments
     .map((segment, index) => {
-      const start = formatTimestamp(Math.floor(segment.start ?? 0));
-      const end = formatTimestamp(Math.floor(segment.end ?? segment.start ?? 0));
+      const start = formatTimestamp(toSeconds(segment.start ?? 0));
+      const end = formatTimestamp(toSeconds(segment.end ?? segment.start ?? 0));
       return `${index + 1}\n${start},000 --> ${end},000\n${segment.text?.trim() ?? ''}\n`;
     })
     .join('\n');
@@ -155,8 +154,8 @@ const buildVttFromSegments = (segments = []) => {
   const header = 'WEBVTT\n';
   const body = segments
     .map((segment) => {
-      const start = formatTimestamp(Math.floor(segment.start ?? 0));
-      const end = formatTimestamp(Math.floor(segment.end ?? segment.start ?? 0));
+      const start = formatTimestamp(toSeconds(segment.start ?? 0));
+      const end = formatTimestamp(toSeconds(segment.end ?? segment.start ?? 0));
       return `${start}.000 --> ${end}.000\n${segment.text?.trim() ?? ''}\n`;
     })
     .join('\n');
@@ -214,8 +213,8 @@ const TranscriptEditorPage = () => {
     const record = stored.find((entry) => entry.id === id);
     if (!record) {
       toast({
-        title: 'Transkripsiyon bulunamadı',
-        description: 'Kayıt yerel bellekte mevcut değil.',
+        title: 'Transcription not found',
+        description: 'Record not available in local storage.',
         variant: 'destructive'
       });
       navigate('/transcriptions');
@@ -251,6 +250,7 @@ const TranscriptEditorPage = () => {
   const entities = assembly.entities ?? [];
   const contentSafety = assembly.content_safety_labels?.results ?? [];
   const iabCategories = assembly.iab_categories_result?.summary ?? [];
+  // Chapters from AssemblyAI are in milliseconds (converted by toSeconds when displayed)
   const chapters = assembly.chapters ?? [];
   const subtitles = assembly.subtitles ?? {};
   const redactedAudio =
@@ -268,6 +268,7 @@ const TranscriptEditorPage = () => {
       : Array.isArray(transcription?.words)
         ? transcription.words
         : [];
+    // convertWordsToSegments now keeps timestamps in milliseconds
     return convertWordsToSegments(baseWords, transcriptText || '');
   }, [paragraphs, segments, assembly.words, transcription?.words, transcriptText]);
 
@@ -282,11 +283,12 @@ const TranscriptEditorPage = () => {
     }
 
     const meta = transcription.metadata ?? {};
+    // audio_duration from API is in seconds, segment timestamps are in milliseconds
     const durationInSeconds =
       meta.duration ??
       assembly.audio_duration ??
       transcription?.audio_duration ??
-      (segments.length ? segments[segments.length - 1].end : null);
+      (segments.length ? toSeconds(segments[segments.length - 1].end) : null);
 
     const confidence =
       meta.confidence ??
@@ -302,7 +304,7 @@ const TranscriptEditorPage = () => {
     return [
       {
         label: 'Duration',
-        value: durationInSeconds ? formatTimestamp(toSeconds(durationInSeconds)) : '—',
+        value: durationInSeconds ? formatTimestamp(durationInSeconds) : '—',
         icon: Clock3
       },
       {
@@ -326,11 +328,11 @@ const TranscriptEditorPage = () => {
     if (!transcriptText) return;
     navigator.clipboard
       .writeText(transcriptText)
-      .then(() => toast({ title: 'Panoya kopyalandı!' }))
+      .then(() => toast({ title: 'Copied to clipboard!' }))
       .catch(() =>
         toast({
-          title: 'Kopyalama başarısız',
-          description: 'Metni kopyalamak için tarayıcı izinlerini kontrol edin.',
+          title: 'Copy failed',
+          description: 'Please check browser permissions to copy text.',
           variant: 'destructive'
         })
       );
@@ -345,7 +347,7 @@ const TranscriptEditorPage = () => {
     const doc = new jsPDF();
     doc.setFont('Helvetica');
     doc.setFontSize(16);
-    doc.text(transcription?.file_name || 'Transkripsiyon', 10, 20);
+    doc.text(transcription?.file_name || 'Transcription', 10, 20);
     doc.setFontSize(11);
     const splitText = doc.splitTextToSize(transcriptText || '', 180);
     doc.text(splitText, 10, 30);
@@ -353,7 +355,7 @@ const TranscriptEditorPage = () => {
   }, [transcription?.file_name, transcriptText]);
 
   const downloadDOCX = useCallback(() => {
-    const paragraphNodes = (paragraphs.length ? paragraphs : segments).map((segment) =>
+    const paragraphNodes = uiSegments.map((segment) =>
       new DocxParagraph({
         children: [
           new TextRun({
@@ -374,7 +376,7 @@ const TranscriptEditorPage = () => {
             new DocxParagraph({
               children: [
                 new TextRun({
-                  text: transcription?.file_name || 'Transkripsiyon',
+                  text: transcription?.file_name || 'Transcription',
                   bold: true,
                   size: 32
                 })
@@ -390,7 +392,7 @@ const TranscriptEditorPage = () => {
     Packer.toBlob(doc).then((blob) => {
       saveAs(blob, `${transcription?.file_name || 'transcription'}.docx`);
     });
-  }, [paragraphs, segments, transcription?.file_name]);
+  }, [uiSegments, transcription?.file_name]);
   const downloadSubtitle = useCallback(
     async (format) => {
       if (!transcription) return;
@@ -403,7 +405,7 @@ const TranscriptEditorPage = () => {
           setSubtitleDownload(format);
           const response = await fetch(`/api/transcripts/${transcription.id}/subtitles?format=${format}`);
           if (!response.ok) {
-            throw new Error(`Altyazı (${format}) alınamadı.`);
+            throw new Error(`Could not retrieve subtitle (${format}).`);
           }
           content = await response.text();
           persistTranscriptionUpdate((prev) => ({
@@ -419,14 +421,14 @@ const TranscriptEditorPage = () => {
         }
 
         if (!content && format === 'srt') {
-          content = buildSrtFromSegments(segments);
+          content = buildSrtFromSegments(uiSegments);
         }
         if (!content && format === 'vtt') {
-          content = buildVttFromSegments(segments);
+          content = buildVttFromSegments(uiSegments);
         }
 
         if (!content) {
-          throw new Error('Altyazı içeriği oluşturulamadı.');
+          throw new Error('Could not generate subtitle content.');
         }
 
         const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -434,7 +436,7 @@ const TranscriptEditorPage = () => {
       } catch (error) {
         console.error('Subtitle download error:', error);
         toast({
-          title: 'Altyazı indirilemedi',
+          title: 'Subtitle download failed',
           description: error.message,
           variant: 'destructive'
         });
@@ -442,7 +444,7 @@ const TranscriptEditorPage = () => {
         setSubtitleDownload(null);
       }
     },
-    [persistTranscriptionUpdate, segments, subtitles, transcription]
+    [persistTranscriptionUpdate, uiSegments, subtitles, transcription]
   );
 
   const handleWordSearch = useCallback(async () => {
@@ -453,8 +455,8 @@ const TranscriptEditorPage = () => {
       .filter(Boolean);
     if (terms.length === 0) {
       toast({
-        title: 'Kelime gerekli',
-        description: 'Aramak istediğiniz kelimeleri virgülle ayırarak girin.',
+        title: 'Words required',
+        description: 'Enter the words you want to search, separated by commas.',
         variant: 'destructive'
       });
       return;
@@ -469,13 +471,13 @@ const TranscriptEditorPage = () => {
       });
       const data = await response.json();
       if (!response.ok || data?.success === false) {
-        throw new Error(data.error || 'Kelime araması başarısız oldu.');
+        throw new Error(data.error || 'Word search failed.');
       }
       setWordResults(data.data || data);
     } catch (error) {
       console.error('Word search error:', error);
       toast({
-        title: 'Kelime araması başarısız',
+        title: 'Word search failed',
         description: error.message,
         variant: 'destructive'
       });
@@ -509,7 +511,7 @@ const TranscriptEditorPage = () => {
             .map((item) => item.trim())
             .filter(Boolean);
           if (!questions.length) {
-            throw new Error('En az bir soru girin.');
+            throw new Error('Enter at least one question.');
           }
           payload.questions = questions;
           if (lemurInputs.qaContext) {
@@ -517,7 +519,7 @@ const TranscriptEditorPage = () => {
           }
         } else if (mode === 'task') {
           if (!lemurInputs.taskPrompt.trim()) {
-            throw new Error('Serbest istem için bir talimat girin.');
+            throw new Error('Enter a prompt for the custom task.');
           }
           payload.prompt = lemurInputs.taskPrompt;
           if (lemurInputs.taskContext.trim()) {
@@ -532,7 +534,7 @@ const TranscriptEditorPage = () => {
         });
         const data = await response.json();
         if (!response.ok || data?.success === false) {
-          throw new Error(data.error || 'LeMUR isteği başarısız oldu.');
+          throw new Error(data.error || 'LeMUR request failed.');
         }
 
         const result = data.data || data;
@@ -542,13 +544,13 @@ const TranscriptEditorPage = () => {
         }));
 
         toast({
-          title: 'LeMUR sonucu hazır',
-          description: 'AssemblyAI LeMUR isteğiniz tamamlandı.'
+          title: 'LeMUR result ready',
+          description: 'Your AssemblyAI LeMUR request has been completed.'
         });
       } catch (error) {
         console.error('LeMUR error:', error);
         toast({
-          title: 'LeMUR isteği başarısız',
+          title: 'LeMUR request failed',
           description: error.message,
           variant: 'destructive'
         });
@@ -576,10 +578,10 @@ const TranscriptEditorPage = () => {
   return (
     <>
       <Helmet>
-        <title>Transkripsiyon - {transcription.file_name || 'Transcription'}</title>
+        <title>Transcription - {transcription.file_name || 'Transcription'}</title>
         <meta
           name="description"
-          content={`AssemblyAI ile işlenen ${transcription.file_name || 'bir dosya'} için transkripsiyon ve zekâ analizleri`}
+          content={`Transcription and AI insights for ${transcription.file_name || 'a file'} processed with AssemblyAI`}
         />
       </Helmet>
 
@@ -593,10 +595,10 @@ const TranscriptEditorPage = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold gradient-text truncate">
-                {transcription.file_name || 'Transkripsiyon'}
+                {transcription.file_name || 'Transcription'}
               </h1>
               <p className="text-sm text-gray-400">
-                AssemblyAI ile analiz edilen dosyanız için tam transkript, özet ve güvenlik içgörüleri.
+                Full transcript, summary, and insights for your file analyzed with AssemblyAI.
               </p>
               <div className="flex flex-wrap gap-2 pt-2">
                 {metaInfo.map((item) => (
@@ -607,25 +609,25 @@ const TranscriptEditorPage = () => {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={handleCopyToClipboard}>
                 <Clipboard className="w-4 h-4 mr-2" />
-                Kopyala
+                Copy
               </Button>
               <Button
                 variant="outline"
                 onClick={() =>
                   toast({
-                    title: 'Paylaşım yakında',
-                    description: 'Bu özellik üzerinde çalışıyoruz.'
+                    title: 'Sharing coming soon',
+                    description: 'We are working on this feature.'
                   })
                 }
               >
                 <Share2 className="w-4 h-4 mr-2" />
-                Paylaş
+                Share
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
                     <Download className="w-4 h-4 mr-2" />
-                    Dışa aktar
+                    Export
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="glass-effect">
@@ -648,7 +650,7 @@ const TranscriptEditorPage = () => {
                   onClick={() => window.open(redactedAudio.redacted_audio_url, '_blank')}
                 >
                   <DownloadCloud className="w-4 h-4 mr-2" />
-                  Redakte ses
+                  Redacted Audio
                 </Button>
               ) : null}
             </div>
@@ -658,9 +660,9 @@ const TranscriptEditorPage = () => {
               <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-6 backdrop-blur">
                 <div className="flex items-center justify-between gap-4 mb-6">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">Transkript</h2>
+                    <h2 className="text-lg font-semibold text-white">Transcript</h2>
                     <p className="text-xs text-gray-400">
-                      Zaman damgalarını kullanarak konuşmanın belirli anlarına hızlıca ulaşın.
+                      Jump to specific moments in the conversation using timestamps.
                     </p>
                   </div>
                 </div>
@@ -690,7 +692,7 @@ const TranscriptEditorPage = () => {
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-gray-900/40 py-12 text-gray-400">
                         <FileText className="h-10 w-10" />
-                        <p>Metin bulunamadi.</p>
+                        <p>No text found.</p>
                       </div>
                     )
                   )}
@@ -702,19 +704,19 @@ const TranscriptEditorPage = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Search className="h-5 w-5 text-sky-300" />
-                      Kelime araması
+                      Word Search
                     </h3>
-                    <p className="text-xs text-gray-400">Anahtar kelimeleri virgülle ayırarak arayın.</p>
+                    <p className="text-xs text-gray-400">Search for keywords separated by commas.</p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
-                      placeholder="Örn. AssemblyAI, yapay zeka"
+                      placeholder="e.g. AssemblyAI, artificial intelligence"
                       value={wordQuery}
                       onChange={(event) => setWordQuery(event.target.value)}
                     />
                     <Button onClick={handleWordSearch} disabled={wordLoading}>
                       {wordLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Ara
+                      Search
                     </Button>
                   </div>
                 </div>
@@ -727,7 +729,7 @@ const TranscriptEditorPage = () => {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <span className="font-semibold text-white">{match.text}</span>
-                          <span className="text-xs text-purple-300 font-medium">{match.count} eşleşme</span>
+                          <span className="text-xs text-purple-300 font-medium">{match.count} matches</span>
                         </div>
                         {match.timestamps?.length ? (
                           <div className="mt-2 flex flex-wrap gap-2">
@@ -738,7 +740,7 @@ const TranscriptEditorPage = () => {
                             ))}
                             {match.timestamps.length > 5 ? (
                               <span className="text-xs text-gray-400">
-                                +{match.timestamps.length - 5} zaman damgası
+                                +{match.timestamps.length - 5} more timestamps
                               </span>
                             ) : null}
                           </div>
@@ -748,7 +750,7 @@ const TranscriptEditorPage = () => {
                   </div>
                 ) : (
                   <p className="mt-4 text-sm text-gray-400">
-                    Henüz bir arama yapmadınız. Lütfen yukarıdaki alana aramak istediğiniz kelimeleri girin.
+                    No search performed yet. Please enter the words you want to search in the field above.
                   </p>
                 )}
               </div>
@@ -756,14 +758,14 @@ const TranscriptEditorPage = () => {
 
             <div className="space-y-6">
               <InsightCard
-                title="Özet ve öne çıkanlar"
+                title="Summary & Highlights"
                 icon={Sparkles}
-                description="AssemblyAI tarafından oluşturulan hızlı özet ve anahtar ifadeler."
+                description="Quick summary and key phrases generated by AssemblyAI."
               >
                 {summaryText ? (
                   <p className="text-sm text-gray-300 leading-relaxed">{summaryText}</p>
                 ) : (
-                  <p className="text-sm text-gray-500">Özet modeli etkin değil veya veri bulunamadı.</p>
+                  <p className="text-sm text-gray-500">Summary model is not enabled or no data found.</p>
                 )}
                 {highlights.length > 0 ? (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -784,12 +786,12 @@ const TranscriptEditorPage = () => {
                     ))}
                 </div>
               </InsightCard>
-              <InsightCard
-                title="Duygu analizi"
-                icon={ListChecks}
-                description="Cümle bazında pozitif, negatif veya nötr duygu analizi."
-              >
-                {sentiment.length > 0 ? (
+              {sentiment.length > 0 && (
+                <InsightCard
+                  title="Sentiment Analysis"
+                  icon={ListChecks}
+                  description="Sentence-level positive, negative, or neutral sentiment analysis."
+                >
                   <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                     {sentiment.map((item, idx) => (
                       <div
@@ -813,17 +815,15 @@ const TranscriptEditorPage = () => {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-500">Duygu analizi etkin değil.</p>
-                )}
-              </InsightCard>
+                </InsightCard>
+              )}
 
-              <InsightCard
-                title="Varlık tanıma"
-                icon={Tag}
-                description="Konuşmada geçen marka, kişi, yer gibi varlıklar."
-              >
-                {entities.length > 0 ? (
+              {entities.length > 0 && (
+                <InsightCard
+                  title="Entity Recognition"
+                  icon={Tag}
+                  description="Brands, people, places, and other entities mentioned in the conversation."
+                >
                   <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                     {entities.map((entity, idx) => (
                       <div
@@ -835,62 +835,58 @@ const TranscriptEditorPage = () => {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-500">Varlık verisi bulunamadı.</p>
-                )}
-              </InsightCard>
+                </InsightCard>
+              )}
 
-              <InsightCard
-                title="İçerik güvenliği & IAB kategorileri"
-                icon={ShieldCheck}
-                description="Zararlı içerik etiketleri ve konu başlıkları."
-              >
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-2">Güvenlik etiketleri</p>
-                    {contentSafety.length > 0 ? (
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                        {contentSafety.map((item, idx) => (
-                          <div
-                            key={`${item.label}-${idx}`}
-                            className="flex items-center justify-between rounded-lg border border-white/5 bg-gray-900/50 px-3 py-2 text-sm text-gray-200"
-                          >
-                            <span>{item.label}</span>
-                            <span className="text-xs text-red-300 font-semibold">%{(item.confidence * 100).toFixed(1)}</span>
-                          </div>
-                        ))}
+              {(contentSafety.length > 0 || iabCategories.length > 0) && (
+                <InsightCard
+                  title="Content Safety & IAB Categories"
+                  icon={ShieldCheck}
+                  description="Harmful content labels and topic categories."
+                >
+                  <div className="space-y-4">
+                    {contentSafety.length > 0 && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-2">Safety Labels</p>
+                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                          {contentSafety.map((item, idx) => (
+                            <div
+                              key={`${item.label}-${idx}`}
+                              className="flex items-center justify-between rounded-lg border border-white/5 bg-gray-900/50 px-3 py-2 text-sm text-gray-200"
+                            >
+                              <span>{item.label}</span>
+                              <span className="text-xs text-red-300 font-semibold">{(item.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">İçerik güvenliği etiketi yok.</p>
+                    )}
+                    {iabCategories.length > 0 && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-2">IAB Topics</p>
+                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                          {iabCategories.map((item, idx) => (
+                            <div
+                              key={`${item.label}-${idx}`}
+                              className="flex items-center justify-between rounded-lg border border-white/5 bg-gray-900/50 px-3 py-2 text-sm text-gray-200"
+                            >
+                              <span>{item.label}</span>
+                              <span className="text-xs text-sky-300 font-semibold">{(item.score * 100).toFixed(1)}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-2">IAB konu başlıkları</p>
-                    {iabCategories.length > 0 ? (
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                        {iabCategories.map((item, idx) => (
-                          <div
-                            key={`${item.label}-${idx}`}
-                            className="flex items-center justify-between rounded-lg border border-white/5 bg-gray-900/50 px-3 py-2 text-sm text-gray-200"
-                          >
-                            <span>{item.label}</span>
-                            <span className="text-xs text-sky-300 font-semibold">%{(item.score * 100).toFixed(1)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">IAB kategorisi bulunamadı.</p>
-                    )}
-                  </div>
-                </div>
-              </InsightCard>
+                </InsightCard>
+              )}
 
-              <InsightCard
-                title="Bölümler"
-                icon={Bookmark}
-                description="Özetlenmiş başlıklarla otomatik bölümleme."
-              >
-                {chapters.length > 0 ? (
+              {chapters.length > 0 && (
+                <InsightCard
+                  title="Chapters"
+                  icon={Bookmark}
+                  description="Automatic segmentation with summarized headings."
+                >
                   <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                     {chapters.map((chapter, idx) => (
                       <div
@@ -900,7 +896,7 @@ const TranscriptEditorPage = () => {
                         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 font-medium">
                           <span className="flex items-center gap-1 text-purple-300">
                             <ArrowRightCircle className="h-3.5 w-3.5" />
-                            {formatTimestamp(chapter.start ?? 0)} - {formatTimestamp(chapter.end ?? 0)}
+                            {formatTimestamp(toSeconds(chapter.start ?? 0))} - {formatTimestamp(toSeconds(chapter.end ?? 0))}
                           </span>
                           {chapter.headline ? <span>• {chapter.headline}</span> : null}
                         </div>
@@ -908,35 +904,33 @@ const TranscriptEditorPage = () => {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-500">Bölüm bilgisi bulunamadı.</p>
-                )}
-              </InsightCard>
+                </InsightCard>
+              )}
 
               <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-6 backdrop-blur">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-3">
                   <Sparkles className="h-5 w-5 text-purple-300" />
-                  AssemblyAI LeMUR Asistanı
+                  AssemblyAI LeMUR Assistant
                 </h3>
                 <p className="text-xs text-gray-400 mb-4">
-                  Transkripti özetlemek, farklı sorulara yanıt almak veya özel görevler üretmek için LeMUR’u kullanın.
+                  Use LeMUR to summarize the transcript, get answers to questions, or generate custom tasks.
                 </p>
                 <Tabs defaultValue="summary" className="w-full">
                   <TabsList className="glass-effect p-1 grid grid-cols-3 mb-4">
-                    <TabsTrigger value="summary">Özet</TabsTrigger>
-                    <TabsTrigger value="qa">Soru-Cevap</TabsTrigger>
-                    <TabsTrigger value="task">Serbest İstem</TabsTrigger>
+                    <TabsTrigger value="summary">Summary</TabsTrigger>
+                    <TabsTrigger value="qa">Q&A</TabsTrigger>
+                    <TabsTrigger value="task">Custom Task</TabsTrigger>
                   </TabsList>
                   <TabsContent value="summary" className="space-y-3">
                     <textarea
                       className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px]"
-                      placeholder="Ör. 'Teknik kararları vurgula ve aksiyon maddeleri üret.'"
+                      placeholder="e.g. 'Highlight technical decisions and generate action items.'"
                       value={lemurInputs.summaryContext}
                       onChange={(event) => setLemurInputs((prev) => ({ ...prev, summaryContext: event.target.value }))}
                     />
                     <Button onClick={() => runLemur('summary')} disabled={lemurLoading === 'summary'}>
                       {lemurLoading === 'summary' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Özet oluştur
+                      Generate Summary
                     </Button>
                     {lemurOutput.summary ? (
                       <div className="rounded-xl border border-white/10 bg-gray-900/50 p-4 text-sm text-gray-300">
@@ -957,18 +951,18 @@ const TranscriptEditorPage = () => {
                   <TabsContent value="qa" className="space-y-3">
                     <textarea
                       className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
-                      placeholder={'Ör.\n• Toplantının ana kararları nelerdi?\n• Finans departmanı için aksiyon maddeleri nelerdir?'}
+                      placeholder={'e.g.\n• Toplantının ana kararları nelerdi?\n• Finans departmanı için aksiyon maddeleri nelerdir?'}
                       value={lemurInputs.questions}
                       onChange={(event) => setLemurInputs((prev) => ({ ...prev, questions: event.target.value }))}
                     />
                     <Input
-                      placeholder="Ek bağlam (opsiyonel)"
+                      placeholder="Additional context (optional)"
                       value={lemurInputs.qaContext}
                       onChange={(event) => setLemurInputs((prev) => ({ ...prev, qaContext: event.target.value }))}
                     />
                     <Button onClick={() => runLemur('qa')} disabled={lemurLoading === 'qa'}>
                       {lemurLoading === 'qa' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Soruları yanıtla
+                      Answer Questions
                     </Button>
                     {lemurOutput.qa ? (
                       <div className="rounded-xl border border-white/10 bg-gray-900/50 p-4 text-sm text-gray-300 space-y-3">
@@ -990,18 +984,18 @@ const TranscriptEditorPage = () => {
                   <TabsContent value="task" className="space-y-3">
                     <textarea
                       className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[140px]"
-                      placeholder="Ör. 'Transkripti 3 maddelik aksiyon planına dönüştür.'"
+                      placeholder="e.g. 'Convert the transcript into a 3-point action plan.'"
                       value={lemurInputs.taskPrompt}
                       onChange={(event) => setLemurInputs((prev) => ({ ...prev, taskPrompt: event.target.value }))}
                     />
                     <Input
-                      placeholder="Ek bağlam (opsiyonel)"
+                      placeholder="Additional context (optional)"
                       value={lemurInputs.taskContext}
                       onChange={(event) => setLemurInputs((prev) => ({ ...prev, taskContext: event.target.value }))}
                     />
                     <Button onClick={() => runLemur('task')} disabled={lemurLoading === 'task'}>
                       {lemurLoading === 'task' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Görevi çalıştır
+                      Run Task
                     </Button>
                     {lemurOutput.task ? (
                       <div className="rounded-xl border border-white/10 bg-gray-900/50 p-4 text-sm text-gray-300">
