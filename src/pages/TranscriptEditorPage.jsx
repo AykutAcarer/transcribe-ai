@@ -108,8 +108,9 @@ const formatTimestamp = (seconds) => {
 
 const toSeconds = (value) => {
   if (typeof value !== 'number' || isNaN(value)) return 0;
-  // AssemblyAI always returns timestamps in milliseconds, convert to seconds
-  return value / 1000;
+  // Smart detection: values >= 1000 are in milliseconds, < 1000 are already in seconds
+  // This handles both new data (ms) and legacy data (seconds)
+  return value >= 1000 ? value / 1000 : value;
 };
 
 const summariseText = (summary) => {
