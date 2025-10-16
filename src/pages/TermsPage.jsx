@@ -23,20 +23,13 @@ const TermsPage = () => {
             <div className="prose prose-invert max-w-none text-gray-300 space-y-4">
               <p>{t('terms_last_updated')} {new Date().toLocaleDateString(language, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
               
-              <h2 className="text-2xl font-bold text-white">{t('termsH2_1')}</h2>
-              <p>{t('terms_p1')}</p>
-              
-              <h2 className="text-2xl font-bold text-white">{t('termsH2_2')}</h2>
+              <p>{t('terms_p1')}</p>             
               <p>{t('terms_p2')}</p>
-
-              <h2 className="text-2xl font-bold text-white">{t('termsH2_3')}</h2>
               <p>{t('terms_p3')}</p>
-
-              <h2 className="text-2xl font-bold text-white">{t('termsH2_4')}</h2>
               <p>{t('terms_p4')}</p>
-              
-              <h2 className="text-2xl font-bold text-white">{t('termsH2_5')}</h2>
               <p>{t('terms_p5')}</p>
+              <p>{t('terms_p6')}</p>
+              <p>{t('terms_p7')}</p>
             </div>
           </div>
         </div>

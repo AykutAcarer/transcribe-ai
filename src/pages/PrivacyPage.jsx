@@ -22,19 +22,29 @@ const PrivacyPage = () => {
             <h1 className="text-4xl font-bold mb-6 gradient-text">{t('privacy_title')}</h1>
             <div className="prose prose-invert max-w-none text-gray-300 space-y-4">
               <p>{t('privacy_last_updated')} {new Date().toLocaleDateString(language, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <p>{t('privacy_p1')}</p>
+              <p></p>
               
               <h2 className="text-2xl font-bold text-white">{t('privacyH2_1')}</h2>
-              <p>{t('privacy_p2')}</p>
+              <p>{t('privacy_p1')}</p>
               
               <h2 className="text-2xl font-bold text-white">{t('privacyH2_2')}</h2>
-              <p>{t('privacy_p3')}</p>
+              <p>{t('privacy_p2')}</p>
 
               <h2 className="text-2xl font-bold text-white">{t('privacyH2_3')}</h2>
-              <p>{t('privacy_p4')}</p>
+              <p>{t('privacy_p3')}</p>
               
               <h2 className="text-2xl font-bold text-white">{t('privacyH2_4')}</h2>
+              <p>{t('privacy_p4')}</p>
+
+              <h2 className="text-2xl font-bold text-white">{t('privacyH2_5')}</h2>
               <p>{t('privacy_p5')}</p>
+
+              <h2 className="text-2xl font-bold text-white">{t('privacyH2_6')}</h2>
+              <p>{t('privacy_p6')}</p>
+
+              <h2 className="text-2xl font-bold text-white">{t('privacyH2_7')}</h2>
+              <p>{t('privacy_p7')}</p>
+
             </div>
           </div>
         </div>
