@@ -5,11 +5,17 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
 import { AssemblyAI } from 'assemblyai';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+app.disable('x-powered-by');
+
 // In production use 5000, in development use 3001
 const PORT = Number(process.env.PORT || (process.env.NODE_ENV === 'production' ? 5000 : 3001));
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
@@ -17,6 +23,70 @@ const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY;
 const assemblyai = new AssemblyAI({
   apiKey: ASSEMBLYAI_API_KEY
 });
+
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.REPLIT_DEV_DOMAIN, process.env.REPL_SLUG].filter(Boolean).map(d => `https://${d}`)
+    : ['http://localhost:5000', 'http://0.0.0.0:5000'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+const cspDirectives = process.env.NODE_ENV === 'production' 
+  ? {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://pagead2.googlesyndication.com"],
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://api.assemblyai.com", "https://*.supabase.co"],
+      frameSrc: ["'self'", "https://pagead2.googlesyndication.com"],
+      mediaSrc: ["'self'", "blob:", "https:"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    }
+  : {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://pagead2.googlesyndication.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://api.assemblyai.com", "https://*.supabase.co"],
+      frameSrc: ["'self'", "https://pagead2.googlesyndication.com"],
+      mediaSrc: ["'self'", "blob:", "https:"],
+      objectSrc: ["'none'"],
+    };
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: cspDirectives,
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  hidePoweredBy: true
+}));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const transcriptionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: 'Transcription limit exceeded. Please try again in an hour.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/transcribe', transcriptionLimiter);
+app.use('/api/transcribe/url', transcriptionLimiter);
 
 app.use(express.json({ limit: '2mb' }));
 
