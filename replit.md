@@ -36,6 +36,34 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-16**: Comprehensive Security Hardening
+  - **CORS Protection**: Added cors middleware with environment-based origin whitelist
+    - Production: Uses REPLIT_DEV_DOMAIN and REPL_SLUG from environment
+    - Development: Allows localhost:5000 and 0.0.0.0:5000
+  - **Security Headers**: Implemented helmet with strict Content Security Policy
+    - Production CSP: NO 'unsafe-inline' or 'unsafe-eval' - XSS protected
+    - Development CSP: Allows inline scripts for Vite HMR
+    - Hides X-Powered-By header to prevent fingerprinting
+  - **Rate Limiting**: Implemented express-rate-limit
+    - General API: 100 requests per 15 minutes
+    - Transcription endpoints: 20 requests per hour
+  - **Credentials Security**: Moved all hardcoded keys to environment variables
+    - Supabase: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+    - AssemblyAI: ASSEMBLYAI_API_KEY (already configured)
+  - **Environment Template**: Created .env.example with documentation
+  - **Input Validation**: Confirmed 58+ existing security checks
+    - File upload limits (500MB max)
+    - URL protocol validation (http/https only)
+    - Media type whitelisting
+    - Subtitle format whitelisting
+    - Transcription options sanitization
+  - **Dependencies**: Updated packages to fix some vulnerabilities (8 packages)
+  - **Security Headers Active**: 
+    - X-Content-Type-Options: nosniff
+    - X-Frame-Options: SAMEORIGIN
+    - X-DNS-Prefetch-Control: off
+    - Strict-Transport-Security (in production)
+
 - **2025-10-16**: Google AdSense Integration
   - **Action**: Added Google AdSense script to index.html head section
   - **Implementation**: AdSense script loads asynchronously on all pages
