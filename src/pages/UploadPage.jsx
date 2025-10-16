@@ -2,7 +2,6 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
-import AdPlaceholder from '@/components/AdPlaceholder';
 import FileUpload from '@/components/FileUpload';
 import URLImport from '@/components/URLImport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,10 +36,6 @@ const UploadPage = () => {
             <p className="text-gray-400">
               {t('upload_center_description') || 'Upload a file or transcribe audio directly from a URL. Configure every AI feature in one place.'}
             </p>
-          </div>
-
-          <div className="flex justify-center mb-10">
-            <AdPlaceholder className="w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
           </div>
 
           <Tabs defaultValue="file" className="w-full">
@@ -81,10 +76,6 @@ const UploadPage = () => {
               <URLImport assemblyConfig={assemblyConfig} onAssemblyConfigChange={setAssemblyConfig} />
             </TabsContent>
           </Tabs>
-
-          <div className="mt-12 flex justify-center">
-            <AdPlaceholder className="w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
-          </div>
         </motion.div>
       </DashboardLayout>
     </>

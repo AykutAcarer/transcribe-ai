@@ -9,7 +9,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { loadStoredTranscriptions, deleteTranscription } from "@/lib/transcriptionStorage";
-import AdPlaceholder from "@/components/AdPlaceholder";
 
 const FEATURE_LABELS = {
   summarization: "Summaries",
@@ -125,10 +124,6 @@ const TranscriptionsPage = () => {
             </p>
           </motion.div>
 
-          <div className="flex justify-center">
-            <AdPlaceholder className="mx-auto w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
-          </div>
-
           <div className="flex justify-between items-center gap-4">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -240,10 +235,6 @@ const TranscriptionsPage = () => {
               </div>
             )}
           </div>
-        </div>
-
-        <div className="flex justify-center mt-10">
-          <AdPlaceholder className="mx-auto w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
         </div>
       </DashboardLayout>
     </>

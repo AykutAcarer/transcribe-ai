@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import AdPlaceholder from '@/components/AdPlaceholder';
 
 const TermsPage = () => {
   const { t, language } = useLanguage();
@@ -39,9 +38,6 @@ const TermsPage = () => {
               <h2 className="text-2xl font-bold text-white">{t('termsH2_5')}</h2>
               <p>{t('terms_p5')}</p>
             </div>
-          </div>
-          <div className="mt-12">
-            <AdPlaceholder className="h-48" />
           </div>
         </div>
       </div>

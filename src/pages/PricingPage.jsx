@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, FileUp, Download, Files, LockKeyhole } from 'lucide-react';
-import AdPlaceholder from '@/components/AdPlaceholder';
 
 const FeatureCard = ({ icon, title, description, delay }) => (
   <motion.div
@@ -91,12 +90,6 @@ const PricingPage = () => {
                 </Button>
             </Link>
           </motion.div>
-
-
-          <div className="container mx-auto px-4 py-20">
-            <AdPlaceholder className="h-48" />
-          </div>
-
         </div>
       </div>
     </>

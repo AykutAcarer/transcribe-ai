@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Lock, ShieldCheck, Database } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import AdPlaceholder from '@/components/AdPlaceholder';
 
 const SecurityPage = () => {
   const { t } = useLanguage();
@@ -50,9 +49,6 @@ const SecurityPage = () => {
 
               <p>{t('security_p5')}</p>
             </div>
-          </div>
-          <div className="mt-12">
-            <AdPlaceholder className="h-48" />
           </div>
         </div>
       </div>

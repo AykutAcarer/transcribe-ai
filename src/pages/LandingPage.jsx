@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Mic, Star, FileText, Share2, Search, UploadCloud, Cpu, Edit3, Rocket } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-import AdPlaceholder from '@/components/AdPlaceholder';
-import GoogleAd from '@/components/GoogleAd';
 import Footer from '@/components/Footer';
 
 const Flag = ({ code }) => (
@@ -274,10 +272,6 @@ const LandingPage = () => {
              </div>
           </section>
 
-          <section className="container mx-auto px-4 py-10">
-            <AdPlaceholder className="h-48" />
-          </section>
-
           <section id="testimonials" className="py-20 px-4">
             <div className="container mx-auto">
               <motion.div
@@ -313,12 +307,6 @@ const LandingPage = () => {
                   </motion.div>
                 ))}
               </div>
-            </div>
-          </section>
-
-          <section className="px-4 pb-16">
-            <div className="container mx-auto flex justify-center">
-              <AdPlaceholder className="mx-auto w-full max-w-[320px] sm:max-w-[468px] lg:max-w-[728px] h-[100px] sm:h-[90px]" />
             </div>
           </section>
         </main>

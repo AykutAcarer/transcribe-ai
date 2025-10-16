@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import AdPlaceholder from '@/components/AdPlaceholder';
 
 const AboutPage = () => {
   const { t } = useLanguage();
@@ -28,9 +27,6 @@ const AboutPage = () => {
               <p>{t('about_p4')}</p>
             </div>
           </div>
-           <div className="mt-12">
-              <AdPlaceholder className="h-48" />
-            </div>
         </div>
       </div>
     </>

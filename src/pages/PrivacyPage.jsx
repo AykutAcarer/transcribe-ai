@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import AdPlaceholder from '@/components/AdPlaceholder';
 
 const PrivacyPage = () => {
   const { t, language } = useLanguage();
@@ -37,9 +36,6 @@ const PrivacyPage = () => {
               <h2 className="text-2xl font-bold text-white">{t('privacyH2_4')}</h2>
               <p>{t('privacy_p5')}</p>
             </div>
-          </div>
-          <div className="mt-12">
-            <AdPlaceholder className="h-48" />
           </div>
         </div>
       </div>
