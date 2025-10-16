@@ -36,6 +36,14 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-16**: Google AdSense Integration
+  - **Action**: Added Google AdSense script to index.html head section
+  - **Implementation**: AdSense script loads asynchronously on all pages
+  - **Publisher ID**: ca-pub-2118843663565567
+  - **Ad Components Removed**: Deleted placeholder AdPlaceholder and GoogleAd components from all 8 pages
+  - **Clean Implementation**: Ads now managed entirely through Google AdSense auto-ads system
+  - **Pages Cleaned**: LandingPage, AboutPage, PrivacyPage, PricingPage, SecurityPage, TermsPage, TranscriptionsPage, UploadPage
+
 - **2025-10-14**: Vite Build Configuration Fix
   - **Problem**: Deployment failing with "Could not resolve entry module index.html" error
   - **Root Cause**: Missing index.html in root directory and missing build.rollupOptions.input configuration
