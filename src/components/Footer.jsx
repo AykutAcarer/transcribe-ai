@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mic } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import CookieSettings from './CookieSettings';
 
 const Footer = () => {
   const { t } = useLanguage();
@@ -41,7 +42,8 @@ const Footer = () => {
             <div className="space-y-2 text-sm">
               <Link to="/privacy" className="text-gray-400 hover:text-white transition block">{t('privacy')}</Link>
               <Link to="/terms" className="text-gray-400 hover:text-white transition block">{t('terms')}</Link>
-              <Link to="/security" className="text-gray-400 hover:text-white transition block">{t('security')}</Link>
+              <Link to="/cookies" className="text-gray-400 hover:text-white transition block">Cookies</Link>
+              <CookieSettings />
             </div>
           </div>
         </div>
