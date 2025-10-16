@@ -27,7 +27,7 @@ export const translations = {
     dashboard: 'Dashboard',
     upload: 'Upload File',
     upload_center_title: 'TranscribeAI Control Center',
-    upload_center_description: 'Upload a file or transcribe audio directly from a URL. Configure every AssemblyAI feature in one place.',
+    upload_center_description: 'Upload a file or transcribe audio directly from a URL. Configure every feature in one place.',
     upload_center_meta_description: 'Configure AssemblyAI transcription features for files or URLs.',
     upload_page_meta_title: 'Upload & Transcribe - TranscribeAI',
     upload_tab_file: 'Upload a File',
