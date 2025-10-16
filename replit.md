@@ -36,6 +36,29 @@ src/
 6. **User Authentication**: Optional Supabase-based authentication system
 
 ## Recent Changes
+- **2025-10-16**: GDPR-Compliant Cookie Consent System
+  - **CookieConsent Banner**: Appears on first visit with 1s delay
+    - Accept All / Reject All / Customize buttons
+    - No silent dismiss - requires explicit user choice
+    - Only hides after consent recorded in localStorage
+  - **CookiePreferences Modal**: Granular cookie category controls
+    - Essential (always on), Functional, Analytics, Advertising toggles
+    - Accept All / Save Preferences / Reject All actions
+    - Smart close behavior with `standalone` prop:
+      - From banner: X/overlay closes modal only, banner persists until choice made
+      - From footer: X/overlay closes modal completely
+  - **CookieSettings Component**: Footer link for preference management
+    - Always accessible from any page
+    - Opens preferences modal in standalone mode
+  - **CookiesPage**: Replaced SecurityPage with comprehensive cookie policy
+    - Detailed explanation of all 4 cookie categories
+    - Third-party services disclosure (Google AdSense, analytics)
+    - User rights and opt-out instructions
+  - **Data Storage**:
+    - `cookieConsent`: 'accepted' | 'declined' | 'customized'
+    - `cookiePreferences`: JSON with category-level choices
+  - **Architect Verified**: Production-ready compliance flow confirmed
+
 - **2025-10-16**: Comprehensive Security Hardening
   - **CORS Protection**: Added cors middleware with environment-based origin whitelist
     - Production: Uses REPLIT_DEV_DOMAIN and REPL_SLUG from environment
@@ -70,7 +93,7 @@ src/
   - **Publisher ID**: ca-pub-2118843663565567
   - **Ad Components Removed**: Deleted placeholder AdPlaceholder and GoogleAd components from all 8 pages
   - **Clean Implementation**: Ads now managed entirely through Google AdSense auto-ads system
-  - **Pages Cleaned**: LandingPage, AboutPage, PrivacyPage, PricingPage, SecurityPage, TermsPage, TranscriptionsPage, UploadPage
+  - **Pages Cleaned**: LandingPage, AboutPage, PrivacyPage, PricingPage, TermsPage, TranscriptionsPage, UploadPage (SecurityPage removed and replaced with CookiesPage)
 
 - **2025-10-14**: Vite Build Configuration Fix
   - **Problem**: Deployment failing with "Could not resolve entry module index.html" error
